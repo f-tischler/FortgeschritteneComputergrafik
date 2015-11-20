@@ -25,14 +25,25 @@
 *
 *******************************************************************/
 
+#ifdef WIN32
+
+#define _CRT_SECURE_NO_WARNINGS
+
+#include <math.h>
+
+#define _USE_MATH_DEFINES
+
+#define drand48() (((double)rand())/((double)RAND_MAX))
+
+#endif
 
 /* Standard includes */
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
-#include <fstream>
 #include <cstring>
 #include <vector>
+#include <assert.h>
 
 using namespace std;
 
@@ -122,7 +133,6 @@ struct Ray
 	Ray(const Vector org_, const Vector &dir_) : org(org_), dir(dir_) {}
 };
 
-
 /*------------------------------------------------------------------
 | Struct holds pixels/colors of rendered image
 ------------------------------------------------------------------*/
@@ -179,8 +189,6 @@ struct Image
         fclose(f);
     }
 };
-
-
 
 /*------------------------------------------------------------------
 | Basic geometric element of scene description;
@@ -248,35 +256,86 @@ struct Rectangle
     }  
 };
 
-struct Triangle {
-    Vector p0, p1, p2, normal;
-    Color emission, color;
-    double A;
-    
-    Triangle(const Vector p0_, const Vector p1_, const Vector p2_, const Color &emission_, const Color &color_) : p0(p0_), p1(p1_), p2(p2_), emission(emission_), color(color_) {
-        normal = p0.Cross(p1).Normalized();
-        A = (p1 - p0).Cross(p2 - p0).Length();
+class Triangle
+{
+public:
+	Triangle() : _a(0.0) { }
+
+    Triangle(const Vector p0_, const Vector p1_, const Vector p2_, const Color &emission_, const Color &color_) 
+		: _p0(p0_), _p1(p1_), _p2(p2_), _emission(emission_), _color(color_)
+	{
+        _normal = _p0.Cross(_p1).Normalized();
+		_a = (_p1 - _p0).Cross(_p2 - _p0).Length();
     }
-    
+
+	double area() const { return _a; }
+	Vector normal() const { return _normal; }
+
     /* Triangle-ray intersection */
-    const double intersect(const Ray &ray) {
+    double intersects(const Ray &ray) const 
+	{
         /* Check for plane-ray intersection first */
-        const double t = (p0 - ray.org).Dot(normal) / ray.dir.Dot(normal);
+        const auto t = (_p0 - ray.org).Dot(_normal) / ray.dir.Dot(_normal);
         if (t <= 0.00001)
             return 0.0;
         
         /* Determine if intersection is within triangle */
-        Vector q = ray.org + ray.dir * t;
-        double A0 = (p1 - q).Cross(p2 - q).Length();
-        double A1 = (p0 - q).Cross(p2 - q).Length();
-        double lambda0 = A0 / A;
-        double lambda1 = A1 / A;
-        double lambda2 = 1 - lambda0 - lambda1;
-        if(lambda0 > 0 && lambda1 > 0 && lambda2 > 0) return t;
-        else return 0.0;
+	    auto q = ray.org + ray.dir * t;
+	    auto A0 = (_p1 - q).Cross(_p2 - q).Length();
+	    auto A1 = (_p0 - q).Cross(_p2 - q).Length();
+	    auto lambda0 = A0 / _a;
+	    auto lambda1 = A1 / _a;
+	    auto lambda2 = 1 - lambda0 - lambda1;
+        
+		if(lambda0 > 0 && lambda1 > 0 && lambda2 > 0) 
+			return t;
+        
+		return 0.0;
     }
-};
 
+	void split(Triangle(&out)[4]) const
+	{
+		auto midP1P0 = (_p1 - _p0) / 2;
+		auto midP2P0 = (_p2 - _p0) / 2;
+		auto midP2P1 = (_p2 - _p1) / 2;
+
+		out[0] = Triangle(midP1P0, midP2P1, midP2P0, _emission, _color);
+		out[1] = Triangle(_p0, midP1P0, midP2P1, _emission, _color);
+		out[2] = Triangle(midP1P0, _p1, midP2P1, _emission, _color);
+		out[3] = Triangle(midP2P1, _p2, midP2P0, _emission, _color);
+	}
+
+	void split_n(size_t n, Triangle* out) const
+    {
+		assert(out);
+
+		for (auto i = 0u; i < n; i++)
+		{
+			Triangle tmp[4];
+
+			split(tmp);
+
+			for (auto j = 0u; j < 4u; j++)
+			{
+				out[i * 4 + j] = tmp[j];
+			}
+		}
+    }
+
+	Vector point_inside() const
+	{
+		auto midP1P0 = (_p1 - _p0) / 2;
+		auto midP2P1 = (_p2 - _p1) / 2;
+
+		return (midP2P1 - midP1P0) / 2;
+	}
+
+private:
+	Vector _p0, _p1, _p2, _normal;
+	Color _emission, _color;
+	double _a;
+
+};
 
 /******************************************************************
 * Hard-coded scene definition: the geometry is composed of rectangles. 
@@ -318,12 +377,18 @@ Rectangle recs[] =
 };
 
 Triangle triangles[] = {
+
+	Triangle(Vector(0, 0 , 0), Vector(100, 0 ,0), Vector(0, 80, 0), Vector(), Vector(1, 0, 0))
+
     /* Cornell Box walls */
 
     /* Area light source on top */
 
     /* Cuboid in room */
 };
+
+template<typename T, size_t N>
+size_t arraySize(T(&)[N]) { return N; }
 
 /******************************************************************
 * Check for closest intersection of a ray with the scene;
@@ -349,6 +414,25 @@ bool Intersect_Scene(const Ray &ray, double *t, int *id, Vector *normal)
     return *t < 1e20;
 }
 
+template<size_t N>
+bool Intersect_Scene_Triangle(const Triangle (&triangles)[N], const Ray &ray, double *t, int *id, Vector *normal)
+{
+	*t = 1e20;
+	*id = -1;
+
+	for (auto i = 0; i < N; i++)
+	{
+		double d = triangles[i].intersects(ray);
+		if (d > 0.0 && d < *t)
+		{
+			*t = d;
+			*id = i;
+			*normal = recs[i].normal;
+		}
+	}
+	return *t < 1e20;
+}
+
 /******************************************************************
 * Determine all form factors for all pairs of patches (of all
 * rectangles);
@@ -358,9 +442,11 @@ bool Intersect_Scene(const Ray &ray, double *t, int *id, Vector *normal)
 * Computation accelerated by exploiting symmetries of form factor
 * estimation;
 *******************************************************************/
-void Calculate_Form_Factors(const int a_div_num, const int b_div_num, 
-                            const int mc_sample) 
+void Calculate_Form_Factors_Rectangle(const int div_num, const int mc_sample) 
 {
+	auto a_div_num = div_num;
+	auto b_div_num = div_num;
+
     /* Total number of patches in scene */
     const int n = int(sizeof(recs) / sizeof(Rectangle));
     for (int i = 0; i < n; i ++) 
@@ -376,11 +462,11 @@ void Calculate_Form_Factors(const int a_div_num, const int b_div_num,
     
     /* 1D-array to hold form factor pairs */
     form_factor = new double[form_factor_num];
-    memset(form_factor, 0.0, sizeof(double) * form_factor_num);
+    memset(form_factor, 0, sizeof(double) * form_factor_num);
 
     /* 1D-array with patch areas */
     double *patch_area = new double[patch_num];
-    memset(patch_area, 0.0, sizeof(double) * patch_num);
+    memset(patch_area, 0, sizeof(double) * patch_num);
 
     /* Precompute patch areas, assuming same size for each rectangle */
     for (int i = 0; i < n; i ++) 
@@ -415,7 +501,7 @@ void Calculate_Form_Factors(const int a_div_num, const int b_div_num,
     {
         int patch_i = offset[i];	
 
-        cout << i << " "; 
+        cout << i << " ";
 		
         /* Loop over all patches in rectangle i */
         for (int ia = 0; ia < recs[i].a_num; ia ++) 
@@ -545,6 +631,215 @@ void Calculate_Form_Factors(const int a_div_num, const int b_div_num,
     }
 }
 
+void Calculate_Form_Factors_Triangle(const int div_num, const int mc_sample)
+{
+	const auto N = arraySize(triangles);
+
+	// Total number of patches in scene
+	// each triangle is split into four subtriangles per division
+	patch_num = N * div_num * 4; 
+
+	std::cout << "Number of triangles: " << N << endl;
+	cout << "Number of patches: " << patch_num << endl;
+
+	auto form_factor_num = patch_num * patch_num;
+	cout << "Number of form factors: " << form_factor_num << endl;
+
+	/* 1D-array to hold form factor pairs */
+	form_factor = new double[form_factor_num];
+	memset(form_factor, 0, sizeof(double) * form_factor_num);
+
+	/* 1D-array with patch areas */
+	auto patch_area = new double[patch_num];
+	memset(patch_area, 0, sizeof(double) * patch_num);
+
+	/* Precompute patch areas, assuming same size for each rectangle */
+	auto subTriangleCount = div_num * 4;
+	for (auto i = 0u; i < N; i++)
+	{
+		auto patch_i = i * subTriangleCount;
+
+		for (auto subTriangle = 0; subTriangle < subTriangleCount; subTriangle++)
+		{
+			patch_area[patch_i + subTriangle] = triangles[i].area() / subTriangleCount;
+		}
+	}
+
+	/* Offsets for indexing of patches in 1D-array */
+	auto offset = new int[N];
+
+	/* Loop over all rectangles in scene */
+	for (auto i = 0u; i < N; i++)
+	{
+		const auto patch_i = i * subTriangleCount;
+		const Vector normal_i = triangles[i].normal();
+
+		cout << i << " ";
+
+		auto sub_triangles_i = new Triangle[subTriangleCount];
+		triangles[i].split_n(div_num, sub_triangles_i);
+
+		/* Loop over all patches in rectangle i */
+		for (auto sub_triangle_i = 0; sub_triangle_i < subTriangleCount; sub_triangle_i++)
+		{
+			/* Loop over all rectangles in scene for rectangle i */
+			for (auto j = 0u; j < N; j++)
+			{
+				const auto patch_j = j * subTriangleCount;
+				const Vector normal_j = triangles[j].normal();
+
+				auto sub_triangles_j = new Triangle[subTriangleCount];
+				triangles[j].split_n(div_num, sub_triangles_j);
+				
+				/* Loop over all patches in rectangle j */
+				for (auto sub_triangle_j = 0; sub_triangle_j < subTriangleCount; sub_triangle_j++)
+				{
+					/* Do not compute form factors for patches on same rectangle;
+					also exploit symmetry to reduce computation;
+					intemediate values; will be divided by patch area below */
+					if (i < j)
+					{
+						double F = 0;
+
+						/* Monte Carlo integration of form factor double integral */
+						const int Ni = mc_sample, Nj = mc_sample;
+
+						/* Uniform PDF for Monte Carlo (1/Ai)x(1/Aj) */
+						const double pdf =
+							(1.0 / patch_area[patch_i + sub_triangle_i]) *
+							(1.0 / patch_area[patch_j + sub_triangle_j]);
+
+						///////////////////////////////////////////////////////////////
+						// simple form factor calculcation with only one sample
+						const auto xi = sub_triangles_i[sub_triangle_i].point_inside();
+						const auto xj = sub_triangles_j[sub_triangle_j].point_inside();
+
+						// Check for visibility between sample points
+						const auto ij = (xj - xi).Normalized();
+
+						double t;
+						int id;
+						Vector normal;
+						if (Intersect_Scene_Triangle(triangles, Ray(xi, ij), &t, &id, &normal) &&
+							id != j)
+						{
+							continue; //If intersection with other rectangle
+						}
+
+						// Cosines of angles beteen normals and ray inbetween
+						const double d0 = normal_i.Dot(ij);
+						const double d1 = normal_j.Dot(-1.0 * ij);
+
+						// Continue if patches facing each other
+						if (d0 > 0.0 && d1 > 0.0)
+						{
+							// Sample form facto´r
+							const double K = d0 * d1 /
+								(M_PI * (xj - xi).LengthSquared());
+
+							//Add weighted sample to estimate
+							F += K / pdf;
+						}
+
+						///////////////////////////////////////////////////////////////
+
+						/* Determine rays of NixNi uniform samples of patch
+						on i to NjxNj uniform samples of patch on j
+						/*for (int ias = 0; ias < Ni; ias++)
+						{
+							for (int ibs = 0; ibs < Ni; ibs++)
+							{
+								for (int jas = 0; jas < Nj; jas++)
+								{
+									for (int jbs = 0; jbs < Nj; jbs++)
+									{
+										// Determine sample points xi, xj on both patche
+										const auto u0 = (ias + 0.5) / Ni;
+										const auto u1 = (ibs + 0.5) / Ni;
+										const auto u2 = (jas + 0.5) / Nj;
+										const auto u3 = (jbs + 0.5) / Nj;
+
+										const Vector xi = recs[i].p0 +
+											recs[i].edge_a * ((double)(ia + u0) / recs[i].a_num) +
+											recs[i].edge_b * ((double)(ib + u1) / recs[i].b_num);
+
+										const Vector xj = recs[j].p0 +
+											recs[j].edge_a * ((double)(ja + u2) / recs[j].a_num) +
+											recs[j].edge_b * ((double)(jb + u3) / recs[j].b_num);
+
+										// Check for visibility between sample points
+										const auto ij = (xj - xi).Normalized();
+
+										double t;
+										int id;
+										Vector normal;
+										if (Intersect_Scene_Triangle(triangles, Ray(xi, ij), &t, &id, &normal) &&
+											id != j)
+										{
+											continue; //If intersection with other rectangle
+										}
+
+										// Cosines of angles beteen normals and ray inbetween
+										const double d0 = normal_i.Dot(ij);
+										const double d1 = normal_j.Dot(-1.0 * ij);
+
+										// Continue if patches facing each other
+										if (d0 > 0.0 && d1 > 0.0)
+										{
+											// Sample form facto´r
+											const double K = d0 * d1 /
+												(M_PI * (xj - xi).LengthSquared());
+
+											//Add weighted sample to estimate
+											F += K / pdf;
+										}
+									}
+								}
+							}
+						}
+
+						// Divide by number of samples
+						F /= (Ni)* (Ni)* (Nj)* (Nj);
+						
+						*/
+
+						form_factor[patch_i * patch_num + patch_j] = F;
+					}
+				}
+
+				delete[] sub_triangles_j;
+			}
+		}
+
+		delete[] sub_triangles_i;
+
+		cout << endl;
+	}
+
+	/* Copy upper to lower triangular values */
+	for (auto i = 0; i < patch_num - 1; i++)
+	{
+		for (auto j = i + 1; j < patch_num; j++)
+		{
+			form_factor[j * patch_num + i] = form_factor[i * patch_num + j];
+		}
+	}
+
+	/* Divide by area to get final form factors */
+	for (auto i = 0; i < patch_num; i++)
+	{
+		for (auto j = 0; j < patch_num; j++)
+		{
+			form_factor[i * patch_num + j] /= patch_area[i];
+
+			/* Clamp to [0,1] */
+			if (form_factor[i * patch_num + j] > 1.0)
+				form_factor[i * patch_num + j] = 1.0;
+		}
+	}
+
+	delete[] offset;
+}
 
 /******************************************************************
 * Iterative computation of radiosity via Gathering; i.e. solution
@@ -552,7 +847,7 @@ void Calculate_Form_Factors(const int a_div_num, const int b_div_num,
 * run-time O(n^2) 
 *******************************************************************/
 
-void Calculate_Radiosity(const int iteration) 
+void Calculate_Radiosity_Rectangle(const int iteration)
 {
     const int n = int(sizeof(recs) / sizeof(Rectangle));
     int patch_i = 0;
@@ -593,6 +888,7 @@ void Calculate_Radiosity(const int iteration)
     }
 }
 
+void Calculate_Radiosity_Triangle(const int iteration) { }
 
 /******************************************************************
 * Helper functions for smooth bicubic (Catmull-Rom) interpolation 
@@ -688,7 +984,15 @@ Color Radiance(const Ray &ray, const int depth, bool interpolation = true)
     }
 }
 
+#define USE_TRIANGLES
 
+#ifdef USE_TRIANGLES
+#define Calculate_Form_Factors Calculate_Form_Factors_Triangle
+#define Calculate_Radiosity Calculate_Radiosity_Triangle
+#else
+#define Calculate_Form_Factors Calculate_Form_Factors_Rectangle
+#define Calculate_Radiosity Calculate_Radiosity_Rectangle
+#endif
 
 /******************************************************************
 * Main routine: Computation of radiosity image
@@ -719,11 +1023,10 @@ int main(int argc, char **argv)
     Image img_interpolated(width, height);
 
     cout << "Calculating form factors" << endl;
-    int patches_a = 12;
-    int patches_b = 12;
+    int divisions = 4;
     int MC_samples = 3;
 
-    Calculate_Form_Factors(patches_a, patches_b, MC_samples);
+    Calculate_Form_Factors(divisions, MC_samples);
 
     /* Iterative solution of radiosity linear system */
     cout << "Calculating radiosity" << endl;
