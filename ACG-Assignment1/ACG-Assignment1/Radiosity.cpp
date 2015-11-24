@@ -43,6 +43,7 @@
 #include <iostream>
 #include <cstring>
 #include <vector>
+#include <cfloat>
 #include <assert.h>
 
 using namespace std;
@@ -267,6 +268,15 @@ public:
         _normal = _p0.Cross(_p1).Normalized();
 		_a = (_p1 - _p0).Cross(_p2 - _p0).Length();
     }
+    
+    Color sample_patch(int i) const {
+        return patch[i];
+    }
+    
+    void init_patchs(int subTriangleCount) {
+        patch.clear();
+        patch.resize(subTriangleCount);
+    }
 
 	double area() const { return _a; }
 	Vector normal() const { return _normal; }
@@ -386,6 +396,7 @@ private:
 	Vector _p0, _p1, _p2, _normal;
 	Color _emission, _color;
 	double _a;
+    vector<Color> patch;
 
 };
 
