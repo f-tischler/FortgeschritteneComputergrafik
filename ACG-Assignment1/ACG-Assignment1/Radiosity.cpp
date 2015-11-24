@@ -25,7 +25,7 @@
 *
 *******************************************************************/
 
-#ifdef WIN32
+#ifdef _WIN32
 
 #define _CRT_SECURE_NO_WARNINGS
 
@@ -271,27 +271,72 @@ public:
 	double area() const { return _a; }
 	Vector normal() const { return _normal; }
 
-    /* Triangle-ray intersection */
-    double intersects(const Ray &ray) const 
+
+	bool intersects(const Ray &ray, float& distance) const 
 	{
-        /* Check for plane-ray intersection first */
-        const auto t = (_p0 - ray.org).Dot(_normal) / ray.dir.Dot(_normal);
-        if (t <= 0.00001)
-            return 0.0;
-        
-        /* Determine if intersection is within triangle */
-	    auto q = ray.org + ray.dir * t;
-	    auto A0 = (_p1 - q).Cross(_p2 - q).Length();
-	    auto A1 = (_p0 - q).Cross(_p2 - q).Length();
-	    auto lambda0 = A0 / _a;
-	    auto lambda1 = A1 / _a;
-	    auto lambda2 = 1 - lambda0 - lambda1;
-        
-		if(lambda0 > 0 && lambda1 > 0 && lambda2 > 0) 
-			return t;
-        
-		return 0.0;
-    }
+		Vector e1, e2;  //Edge1, Edge2
+		Vector P, Q, T;
+		float det, inv_det, u, v;
+		float t;
+
+		auto V1 = _p0;
+		auto V2 = _p1;
+		auto V3 = _p2;
+		auto D = ray.dir;
+		auto O = ray.org;
+
+		#define SUB(a,b,c) a = (b) - (c)
+		#define CROSS(a,b,c) a = (b).Cross(c)
+		#define DOT(a,b) (a).Dot(b)
+		#define EPSILON 0.000001f
+
+		//Find vectors for two edges sharing V1
+		e1 = V2 - V1;
+		e2 = V3 - V1;
+
+		//Begin calculating determinant - also used to calculate u parameter
+		P = D.Cross(e2);
+
+		//if determinant is near zero, ray lies in plane of triangle
+		det = e1.Dot(P);
+
+		//NOT CULLING
+		if (det > -EPSILON && det < EPSILON) 
+			return false;
+
+
+		inv_det = 1.f / det;
+		//calculate distance from V1 to ray origin
+		T = O - V1;
+
+		//Calculate u parameter and test bound
+		u = T.Dot(P) * inv_det;
+
+		//The intersection lies outside of the triangle
+		if (u < 0.f || u > 1.f) 
+			return false;
+
+		//Prepare to test v parameter
+		Q = T.Cross(e1);
+
+		//Calculate V parameter and test bound
+		v = D.Dot(Q) * inv_det;
+
+		//The intersection lies outside of the triangle
+		if (v < 0.f || u + v  > 1.f) 
+			return false;
+
+		t = e2.Dot(Q) * inv_det;
+
+		//ray intersection
+		if (t > EPSILON) 
+		{ 
+			distance = t;
+			return true;
+		}
+
+		return false;
+	}
 
 	void split(Triangle(&out)[4]) const
 	{
@@ -330,6 +375,13 @@ public:
 		return (midP2P1 - midP1P0) / 2;
 	}
 
+	const Color& getEmission() const { return _emission; }
+	const Color& getColor() const { return _color; }
+	const Vector& getNormal() const { return _normal; }
+	const Vector& getP1() const { return _p0; }
+	const Vector& getP2() const { return _p1; }
+	const Vector& getP3() const { return _p2; }
+
 private:
 	Vector _p0, _p1, _p2, _normal;
 	Color _emission, _color;
@@ -347,11 +399,11 @@ Rectangle recs[] =
 {	
     /* Cornell Box walls */
     Rectangle(Vector(0.0, 0.0, 0.0), Vector(100.0, 0.0, 0.0), Vector(0.0, 80.0, 0.0),   
-              Vector(), Color(0.75, 0.75, 0.75)), /* Back */
+              Vector(), Color(0.75, 0, 0)), /* Back */
     Rectangle(Vector(0.0, 0.0, 170.0), Vector(100.0, 0.0, 0.0), Vector(0.0, 0.0, -170.0), 
-              Vector(), Color(0.75, 0.75, 0.75)), /* Bottom */
+              Vector(), Color(0, 0.75, 0)), /* Bottom */
     Rectangle(Vector(0.0, 80.0, 0.0), Vector(100.0, 0.0, 0.0), Vector(0.0, 0.0, 170.0),  
-              Vector(), Color(0.75, 0.75, 0.75)), /* Top */
+              Vector(), Color(0, 0.75, 0)), /* Top */
     Rectangle(Vector(0.0, 0.0, 170.0), Vector(0.0, 0.0, -170.0), Vector(0.0, 80.0, 0.0),   
               Vector(), Color(0.75, 0.25, 0.25)), /* Left */
     Rectangle(Vector(100.0, 0.0, 0.0), Vector(0.0, 0.0, 170.0), Vector(0.0, 80.0, 0.0),   
@@ -365,27 +417,43 @@ Rectangle recs[] =
 
     /* Cuboid in room */
     Rectangle(Vector(30.0, 0.0, 100.0), Vector(0.0, 0.0, -20.0), Vector(0.0, 40.0, 0.0),   
-              Vector(), Color(0.75, 0.75, 0.75)), /* Right */
+		Vector(), Color(0.1, 0.1, 0.1)), /* Right */
     Rectangle(Vector(10.0, 0.0, 80.0), Vector(0.0, 0.0, 20.0), Vector(0.0, 40.0, 0.0),   
-              Vector(), Color(0.75, 0.75, 0.75)), /* Left */
+		Vector(), Color(0.1, 0.1, 0.1)), /* Left */
     Rectangle(Vector(10.0, 0.0, 100.0), Vector(20.0, 0.0, 0.0), Vector(0.0, 40.0, 0.0),   
-              Vector(), Color(0.75, 0.75, 0.75)), /* Front */
+		Vector(), Color(0.1, 0.1, 0.1)), /* Front */
     Rectangle(Vector(30.0, 0.0, 80.0), Vector(-20.0, 0.0, 0.0), Vector(0.0, -40.0, 0.0),  
-              Vector(), Color(0.75, 0.75, 0.75)), /* Back */
+		Vector(), Color(0.1, 0.1, 0.1)), /* Back */
     Rectangle(Vector(10.0, 40.0, 100.0), Vector(20.0, 0.0, 0.0), Vector(0.0, 0.0, -20.0), 
-              Vector(), Color(0.75, 0.75, 0.75)), /* Top */
+		Vector(), Color(0.1, 0.1, 0.1)), /* Top */
 };
 
-Triangle triangles[] = {
+std::vector<Triangle> triangles;
 
-	Triangle(Vector(0, 0 , 0), Vector(100, 0 ,0), Vector(0, 80, 0), Vector(), Vector(1, 0, 0))
+template<size_t N>
+void convertRectangles(const Rectangle(&rects)[N], std::vector<Triangle>& triangles)
+{
+	if (!triangles.empty())
+		triangles.clear();
 
-    /* Cornell Box walls */
+	int i = 0;
+	triangles.resize(N*2);
+	for (auto rect : rects)
+	{
+		auto tl = rect.p0;
+		auto bl = rect.p0 + rect.edge_b;
+		auto tr = rect.p0 + rect.edge_a;
+		auto br = bl + rect.edge_a;
 
-    /* Area light source on top */
+		triangles[i++] = Triangle(tl, bl, tr, rect.emission, rect.color);
+		triangles[i++] = Triangle(bl, tr, br, rect.emission, rect.color);
+	}
+}
 
-    /* Cuboid in room */
-};
+
+
+
+
 
 template<typename T, size_t N>
 size_t arraySize(T(&)[N]) { return N; }
@@ -414,23 +482,30 @@ bool Intersect_Scene(const Ray &ray, double *t, int *id, Vector *normal)
     return *t < 1e20;
 }
 
-template<size_t N>
-bool Intersect_Scene_Triangle(const Triangle (&triangles)[N], const Ray &ray, double *t, int *id, Vector *normal)
+bool Intersect_Scene_Triangle(const Ray &ray, double *t, int *id, Vector *normal)
 {
-	*t = 1e20;
+	const int n = triangles.size();
+	bool hit = false;
+	*t = FLT_MAX;
 	*id = -1;
 
-	for (auto i = 0; i < N; i++)
+	for (int i = 0; i < n; i++)
 	{
-		double d = triangles[i].intersects(ray);
-		if (d > 0.0 && d < *t)
+		float d, u, v;
+		if (!triangles[i].intersects(ray, d))
+			continue;
+		else
 		{
-			*t = d;
-			*id = i;
-			*normal = recs[i].normal;
+			hit = true;
+			if (d > 0.0 && d < *t)
+			{
+				*t = d;
+				*id = i;
+				*normal = triangles[i].getNormal();
+			}
 		}
 	}
-	return *t < 1e20;
+	return hit;
 }
 
 /******************************************************************
@@ -633,11 +708,11 @@ void Calculate_Form_Factors_Rectangle(const int div_num, const int mc_sample)
 
 void Calculate_Form_Factors_Triangle(const int div_num, const int mc_sample)
 {
-	const auto N = arraySize(triangles);
+	const auto N = triangles.size();
 
 	// Total number of patches in scene
 	// each triangle is split into four subtriangles per division
-	patch_num = N * div_num * 4; 
+	patch_num = (int)N * div_num * 4; 
 
 	std::cout << "Number of triangles: " << N << endl;
 	cout << "Number of patches: " << patch_num << endl;
@@ -720,7 +795,7 @@ void Calculate_Form_Factors_Triangle(const int div_num, const int mc_sample)
 						double t;
 						int id;
 						Vector normal;
-						if (Intersect_Scene_Triangle(triangles, Ray(xi, ij), &t, &id, &normal) &&
+						if (Intersect_Scene_Triangle(Ray(xi, ij), &t, &id, &normal) &&
 							id != j)
 						{
 							continue; //If intersection with other rectangle
@@ -923,7 +998,7 @@ Color bicubicInterpolate (Color p[4][4], double x, double y)
 * smoothly interpolated color of 4x4 neighboring patches
 *******************************************************************/
 
-Color Radiance(const Ray &ray, const int depth, bool interpolation = true) 
+Color Radiance_Rectangle(const Ray &ray, const int depth, bool interpolation = true)
 {
     double t; 
     int id;  
@@ -984,14 +1059,84 @@ Color Radiance(const Ray &ray, const int depth, bool interpolation = true)
     }
 }
 
+Color Radiance_triangles(const Ray &ray, const int depth, bool interpolation = true)
+{
+	double t;
+	int id;
+	Vector normal;
+
+	/* Find intersected rectangle */
+	if (!Intersect_Scene_Triangle(ray, &t, &id, &normal))
+	{
+		return BackgroundColor;
+	}
+
+	/* Determine intersection point on rectangle */
+	const Triangle &obj = triangles[id];
+	const Vector hitpoint = ray.org + t * ray.dir;
+
+
+	/* Determine intersected patch */
+	const Vector v = hitpoint - obj.getP1();
+	auto edgeA = obj.getP2() - obj.getP1();
+	auto edgeB = obj.getP3() - obj.getP1();
+
+	const double a_len = v.Dot(edgeA.Normalized());
+	const double b_len = v.Dot(edgeB.Normalized());
+
+	return obj.getColor();
+
+// 	double da = obj.a_num * a_len / obj.a_len;
+// 	double db = obj.b_num * b_len / obj.b_len;
+// 
+// 	int ia = int(da); if (ia >= obj.a_num) ia--;
+// 	int ib = int(db); if (ib >= obj.b_num) ib--;
+// 
+// 	/* Bicubic interpolation for smooth image */
+// 	if (interpolation)
+// 	{
+// 		Color c[4][4];
+// 
+// 		int ia = int(da - 0.5);
+// 		int ib = int(db - 0.5);
+// 
+// 		for (int i = 0; i < 4; i++)
+// 		{
+// 			for (int j = 0; j < 4; j++)
+// 			{
+// 				c[i][j] = obj.sample_patch(ia + i - 1, ib + j - 1);
+// 			}
+// 		}
+// 
+// 		int ia0 = int(da - 0.5);
+// 		int ib0 = int(db - 0.5);
+// 		double dx = da - ia0 - 0.5;
+// 		double dy = db - ib0 - 0.5;
+// 
+// 		if (dx < 0.0)  dx = 0.0;
+// 		if (dx >= 1.0) dx = 1.0;
+// 		if (dy < 0.0)  dy = 0.0;
+// 		if (dy >= 1.0) dy = 1.0;
+// 
+// 		return bicubicInterpolate(c, dx, dy) * Over_M_PI;
+// 	}
+// 	else
+// 	{
+// 		return obj.patch[ia * obj.b_num + ib] * Over_M_PI;
+// 	}
+}
+
 #define USE_TRIANGLES
 
 #ifdef USE_TRIANGLES
 #define Calculate_Form_Factors Calculate_Form_Factors_Triangle
 #define Calculate_Radiosity Calculate_Radiosity_Triangle
+#define Radiance Radiance_triangles
 #else
 #define Calculate_Form_Factors Calculate_Form_Factors_Rectangle
 #define Calculate_Radiosity Calculate_Radiosity_Rectangle
+#define Calculate_Radiosity Calculate_Radiosity_Rectangle
+#define Radiance Radiance_Rectangle
 #endif
 
 /******************************************************************
@@ -1007,9 +1152,11 @@ Color Radiance(const Ray &ray, const int depth, bool interpolation = true)
 
 int main(int argc, char **argv) 
 {
+	convertRectangles(recs, triangles);
+
     int width = 640;
     int height = 480;
-    int samples = 4;
+    int samples = 2;
 
     /* Set camera origin and viewing direction (negative z direction) */
     Ray camera(Vector(50.0, 52.0, 295.6), Vector(0.0, -0.042612, -1.0).Normalized());
@@ -1105,4 +1252,8 @@ int main(int argc, char **argv)
 	
     img.Save(string("image_patches.ppm"));
     img_interpolated.Save(string("image_smooth.ppm"));
+
+#ifdef _WIN32
+	system("image_smooth.ppm");
+#endif
 }
