@@ -265,7 +265,7 @@ public:
     Triangle(const Vector p0_, const Vector p1_, const Vector p2_, const Color &emission_, const Color &color_) 
 		: _p0(p0_), _p1(p1_), _p2(p2_), _emission(emission_), _color(color_)
 	{
-        _normal = _p0.Cross(_p1).Normalized();
+        _normal = (_p1-_p0).Cross(_p2-_p0).Normalized();
 		_a = (_p1 - _p0).Cross(_p2 - _p0).Length();
     }
     
@@ -282,70 +282,70 @@ public:
 	Vector normal() const { return _normal; }
 
 
-	bool intersects(const Ray &ray, float& distance) const 
+	bool intersects(const Ray &ray, float& distance) const
 	{
-		Vector e1, e2;  //Edge1, Edge2
-		Vector P, Q, T;
-		float det, inv_det, u, v;
-		float t;
-
-		auto V1 = _p0;
-		auto V2 = _p1;
-		auto V3 = _p2;
-		auto D = ray.dir;
-		auto O = ray.org;
-
-		#define SUB(a,b,c) a = (b) - (c)
-		#define CROSS(a,b,c) a = (b).Cross(c)
-		#define DOT(a,b) (a).Dot(b)
-		#define EPSILON 0.000001f
-
-		//Find vectors for two edges sharing V1
-		e1 = V2 - V1;
-		e2 = V3 - V1;
-
-		//Begin calculating determinant - also used to calculate u parameter
-		P = D.Cross(e2);
-
-		//if determinant is near zero, ray lies in plane of triangle
-		det = e1.Dot(P);
-
-		//NOT CULLING
-		if (det > -EPSILON && det < EPSILON) 
-			return false;
-
-
-		inv_det = 1.f / det;
-		//calculate distance from V1 to ray origin
-		T = O - V1;
-
-		//Calculate u parameter and test bound
-		u = T.Dot(P) * inv_det;
-
-		//The intersection lies outside of the triangle
-		if (u < 0.f || u > 1.f) 
-			return false;
-
-		//Prepare to test v parameter
-		Q = T.Cross(e1);
-
-		//Calculate V parameter and test bound
-		v = D.Dot(Q) * inv_det;
-
-		//The intersection lies outside of the triangle
-		if (v < 0.f || u + v  > 1.f) 
-			return false;
-
-		t = e2.Dot(Q) * inv_det;
-
-		//ray intersection
-		if (t > EPSILON) 
-		{ 
-			distance = t;
-			return true;
-		}
-
-		return false;
+        Vector e1, e2;  //Edge1, Edge2
+        Vector P, Q, T;
+        float det, inv_det, u, v;
+        float t;
+        
+        auto V1 = _p0;
+        auto V2 = _p1;
+        auto V3 = _p2;
+        auto D = ray.dir;
+        auto O = ray.org;
+        
+#define SUB(a,b,c) a = (b) - (c)
+#define CROSS(a,b,c) a = (b).Cross(c)
+#define DOT(a,b) (a).Dot(b)
+#define EPSILON 0.000001f
+        
+        //Find vectors for two edges sharing V1
+        e1 = V2 - V1;
+        e2 = V3 - V1;
+        
+        //Begin calculating determinant - also used to calculate u parameter
+        P = D.Cross(e2);
+        
+        //if determinant is near zero, ray lies in plane of triangle
+        det = e1.Dot(P);
+        
+        //NOT CULLING
+        if (det > -EPSILON && det < EPSILON)
+            return false;
+        
+        
+        inv_det = 1.f / det;
+        //calculate distance from V1 to ray origin
+        T = O - V1;
+        
+        //Calculate u parameter and test bound
+        u = T.Dot(P) * inv_det;
+        
+        //The intersection lies outside of the triangle
+        if (u < 0.f || u > 1.f)
+            return false;
+        
+        //Prepare to test v parameter
+        Q = T.Cross(e1);
+        
+        //Calculate V parameter and test bound
+        v = D.Dot(Q) * inv_det;
+        
+        //The intersection lies outside of the triangle
+        if (v < 0.f || u + v  > 1.f) 
+            return false;
+        
+        t = e2.Dot(Q) * inv_det;
+        
+        //ray intersection
+        if (t > EPSILON) 
+        { 
+            distance = t;
+            return true;
+        }
+        
+        return false;
 	}
 
 	void split(Triangle(&out)[4]) const
@@ -1181,7 +1181,7 @@ int main(int argc, char **argv)
     Image img_interpolated(width, height);
 
     cout << "Calculating form factors" << endl;
-    int divisions = 4;
+    int divisions = 1;
     int MC_samples = 3;
 
     Calculate_Form_Factors(divisions, MC_samples);
