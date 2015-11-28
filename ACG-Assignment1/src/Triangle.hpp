@@ -15,11 +15,12 @@ public:
 	Triangle(const Vector p0_, const Vector p1_, const Vector p2_, const Color &emission_, const Color &color_)
 		: _p0(p0_), _p1(p1_), _p2(p2_), _emission(emission_), _color(color_)
 	{
-		auto edgeA = _p0 - _p1;
-		auto edgeB = _p1 - _p2;
+		auto edgeA = _p1 - _p0;
+		auto edgeB = _p2 - _p0;
+        auto edgeACrossEdgeB = edgeA.Cross(edgeB);
 
-		_normal = edgeA.Cross(edgeB).Normalized();
-		_a = (_p1 - _p0).Cross(_p2 - _p0).Length();
+		_normal = edgeACrossEdgeB.Normalized();
+		_a = edgeACrossEdgeB.Length();
 	}
 
 	double area() const { return _a; }
@@ -129,10 +130,7 @@ public:
 
 	Vector point_inside() const
 	{
-		auto midP1P0 = _p0 + (_p1 - _p0) / 2;
-		auto midP2P0 = _p0 + (_p2 - _p0) / 2;
-
-		return midP1P0 + (midP2P0 - midP1P0) / 2;
+		return (_p0 + _p1 + _p2) / 3;
 	}
 
 	void init_patchs(const int divisions)

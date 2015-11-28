@@ -326,9 +326,6 @@ private:
 								F += K / pdf;
 							}
 
-
-
-
 							mFormFactor[patch_i * mPatchCount + patch_j] = F;
 						}
 						patch_j++;

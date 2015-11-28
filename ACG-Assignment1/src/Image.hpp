@@ -2,6 +2,9 @@
 #define Image_H_included
 
 #include "Vector.hpp"
+#ifdef __APPLE__
+#include <stdio.h>
+#endif
 #include <string>
 
 /*------------------------------------------------------------------
@@ -53,7 +56,12 @@ public:
 	{
 		/* Save image in PPM format */
 		FILE *f;
+#ifndef __APPLE__
 		fopen_s(&f, filename.c_str(), "wb");
+#endif
+#ifdef __APPLE__
+        f = fopen(filename.c_str(), "wb");
+#endif
 		fprintf(f, "P3\n%d %d\n%d\n", width, height, 255);
 		for (int i = 0; i < width * height; i++)
 			fprintf(f, "%d %d %d ", toInteger(pixels[i].x),
