@@ -15,7 +15,10 @@ public:
 	Triangle(const Vector p0_, const Vector p1_, const Vector p2_, const Color &emission_, const Color &color_)
 		: _p0(p0_), _p1(p1_), _p2(p2_), _emission(emission_), _color(color_)
 	{
-		_normal = _p0.Cross(_p1).Normalized();
+		auto edgeA = _p0 - _p1;
+		auto edgeB = _p1 - _p2;
+
+		_normal = edgeA.Cross(edgeB).Normalized();
 		_a = (_p1 - _p0).Cross(_p2 - _p0).Length();
 	}
 
@@ -103,31 +106,33 @@ public:
 		return false;
 	}
 
+	unsigned int getSubTriangleCount() { return _subTriangles.size(); }
+
 	void split(Triangle(&out)[4]) const
 	{
 		auto midP1P0 = _p0 + (_p1 - _p0) / 2;
 		auto midP2P0 = _p0 + (_p2 - _p0) / 2;
 		auto midP2P1 = _p1 + (_p2 - _p1) / 2;
 
-// 		out[0] = Triangle(midP1P0, midP2P1, midP2P0, _emission, _color);
-// 		out[1] = Triangle(_p0, midP1P0, midP2P0, _emission, _color);
-// 		out[2] = Triangle(midP1P0, _p1, midP2P1, _emission, _color);
-// 		out[3] = Triangle(midP2P1, _p2, midP2P0, _emission, _color);
-
-
-		//For testing interpolation
-		out[0] = Triangle(midP1P0, midP2P1, midP2P0, _emission, _color*0.2);
-		out[1] = Triangle(_p0, midP1P0, midP2P0, _emission, _color*0.4);
-		out[2] = Triangle(midP1P0, _p1, midP2P1, _emission, _color*0.7);
+		out[0] = Triangle(midP1P0, midP2P1, midP2P0, _emission, _color);
+		out[1] = Triangle(_p0, midP1P0, midP2P0, _emission, _color);
+		out[2] = Triangle(midP1P0, _p1, midP2P1, _emission, _color);
 		out[3] = Triangle(midP2P1, _p2, midP2P0, _emission, _color);
+
+// 
+// 		//For testing interpolation
+// 		out[0] = Triangle(midP1P0, midP2P1, midP2P0, _emission, _color*0.2);
+// 		out[1] = Triangle(_p0, midP1P0, midP2P0, _emission, _color*0.4);
+// 		out[2] = Triangle(midP1P0, _p1, midP2P1, _emission, _color*0.7);
+// 		out[3] = Triangle(midP2P1, _p2, midP2P0, _emission, _color);
 	}
 
 	Vector point_inside() const
 	{
-		auto midP1P0 = (_p1 - _p0) / 2;
-		auto midP2P1 = (_p2 - _p1) / 2;
+		auto midP1P0 = _p0 + (_p1 - _p0) / 2;
+		auto midP2P0 = _p0 + (_p2 - _p0) / 2;
 
-		return (midP2P1 - midP1P0) / 2;
+		return midP1P0 + (midP2P0 - midP1P0) / 2;
 	}
 
 	void init_patchs(const int divisions)
@@ -165,6 +170,13 @@ public:
 	{
 		return _subTriangles[index];
 	}
+
+	Triangle& getSubTriangle(int index) 
+	{
+		return _subTriangles[index];
+	}
+
+	void setColor(const Color& color) { _color = color; }
 
 	const Color& getEmission() const { return _emission; }
 	const Color& getColor() const { return _color; }

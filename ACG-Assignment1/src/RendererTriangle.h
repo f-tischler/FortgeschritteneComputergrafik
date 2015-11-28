@@ -76,7 +76,7 @@ public:
 		Vector cy = (cx.Cross(camera.dir)).Normalized() * 0.5135;
 
 		std::cout << "Calculating form factors" << std::endl;
-		int divisions = 4; // subtriangleCount = 4^divisions
+		int divisions = 1; // subtriangleCount = 4^divisions
 		int MC_mSamples = 3;
 
 		Calculate_Form_Factors(divisions, MC_mSamples);
@@ -183,7 +183,7 @@ private:
 		for (int i = 0; i < n; i++)
 		{
 			double d;
-			if(!mTriangles[i].intersects(ray, d))
+			if (!mTriangles[i].intersects(ray, d))
 				continue;
 
 			if (d > 0.0 && d < *t)
@@ -223,178 +223,146 @@ private:
 		int mFormFactor_num = mPatchCount * mPatchCount;
 		std::cout << "Number of form factors: " << mFormFactor_num << std::endl;
 
+		/* 1D-array to hold form factor pairs */
+		mFormFactor.clear();
+		mFormFactor.resize(mFormFactor_num);
+		memset(mFormFactor.data(), 0, sizeof(double)* mFormFactor_num);
 
-// 
-// 		/* 1D-array to hold form factor pairs */
-// 		mFormFactor.clear();
-// 		mFormFactor.resize(mFormFactor_num);
-// 		memset(mFormFactor.data(), 0, sizeof(double)* mFormFactor_num);
-// 
-// 		/* 1D-array with patch areas */
-// 		double *patch_area = new double[mPatchCount];
-// 		memset(patch_area, 0, sizeof(double)* mPatchCount);
-// 
-// 		/* Precompute patch areas, assuming same size for each rectangle */
-// 		for (int i = 0; i < n; i++)
-// 		{
-// 			int patch_i = 0;
-// 			for (int k = 0; k < i; k++)
-// 				patch_i += mRectangles[k].a_num * mRectangles[k].b_num;
-// 
-// 			for (int ia = 0; ia < mRectangles[i].a_num; ia++)
-// 			{
-// 				for (int ib = 0; ib < mRectangles[i].b_num; ib++)
-// 				{
-// 					patch_area[patch_i + ia* mRectangles[i].b_num + ib] =
-// 						((mRectangles[i].edge_a / mRectangles[i].a_num).
-// 						Cross((mRectangles[i].edge_b / mRectangles[i].b_num))).Length();
-// 				}
-// 			}
-// 		}
-// 
-// 		/* Offsets for indexing of patches in 1D-array */
-// 		int *offset = new int[n];
-// 
-// 		for (int i = 0; i < n; i++)
-// 		{
-// 			offset[i] = 0;
-// 			for (int k = 0; k < i; k++)
-// 				offset[i] += mRectangles[k].a_num * mRectangles[k].b_num;
-// 		}
-// 
-// 		/* Loop over all rectangles in scene */
-// 		for (int i = 0; i < n; i++)
-// 		{
-// 			int patch_i = offset[i];
-// 
-// 			cout << i << " ";
-// 
-// 			/* Loop over all patches in rectangle i */
-// 			for (int ia = 0; ia < mRectangles[i].a_num; ia++)
-// 			{
-// 				cout << "*" << flush;
-// 				for (int ib = 0; ib < mRectangles[i].b_num; ib++)
-// 				{
-// 					const Vector normal_i = mRectangles[i].normal;
-// 
-// 					int patch_j = 0;
-// 
-// 					/* Loop over all rectangles in scene for rectangle i */
-// 					for (int j = 0; j < n; j++)
-// 					{
-// 						const Vector normal_j = mRectangles[j].normal;
-// 
-// 						/* Loop over all patches in rectangle j */
-// 						for (int ja = 0; ja < mRectangles[j].a_num; ja++)
-// 						{
-// 							for (int jb = 0; jb < mRectangles[j].b_num; jb++)
-// 							{
-// 								/* Do not compute form factors for patches on same rectangle;
-// 								also exploit symmetry to reduce computation;
-// 								intemediate values; will be divided by patch area below */
-// 								if (i < j)
-// 								{
-// 									double F = 0;
-// 
-// 									/* Monte Carlo integration of form factor double integral */
-// 									const int Ni = mc_sample, Nj = mc_sample;
-// 
-// 									/* Uniform PDF for Monte Carlo (1/Ai)x(1/Aj) */
-// 									const double pdf =
-// 										(1.0 / patch_area[offset[i] + ia*mRectangles[i].b_num + ib]) *
-// 										(1.0 / patch_area[offset[j] + ja*mRectangles[j].b_num + jb]);
-// 
-// 									/* Determine rays of NixNi uniform mSamples of patch
-// 									on i to NjxNj uniform mSamples of patch on j */
-// 									for (int ias = 0; ias < Ni; ias++)
-// 									{
-// 										for (int ibs = 0; ibs < Ni; ibs++)
-// 										{
-// 											for (int jas = 0; jas < Nj; jas++)
-// 											{
-// 												for (int jbs = 0; jbs < Nj; jbs++)
-// 												{
-// 													/* Determine sample points xi, xj on both patches */
-// 													const double u0 = (double)(ias + 0.5) / Ni,
-// 														u1 = (double)(ibs + 0.5) / Ni;
-// 													const double u2 = (double)(jas + 0.5) / Nj,
-// 														u3 = (double)(jbs + 0.5) / Nj;
-// 
-// 													const Vector xi = mRectangles[i].p0 +
-// 														mRectangles[i].edge_a * ((double)(ia + u0) / mRectangles[i].a_num) +
-// 														mRectangles[i].edge_b * ((double)(ib + u1) / mRectangles[i].b_num);
-// 													const Vector xj = mRectangles[j].p0 +
-// 														mRectangles[j].edge_a * ((double)(ja + u2) / mRectangles[j].a_num) +
-// 														mRectangles[j].edge_b * ((double)(jb + u3) / mRectangles[j].b_num);
-// 
-// 													/* Check for visibility between sample points */
-// 													const Vector ij = (xj - xi).Normalized();
-// 
-// 													double t;
-// 													int id;
-// 													Vector normal;
-// 													if (Intersect_Scene(Ray(xi, ij), &t, &id, &normal) &&
-// 														id != j)
-// 													{
-// 														continue; /* If intersection with other rectangle */
-// 													}
-// 
-// 													/* Cosines of angles beteen normals and ray inbetween */
-// 													const double d0 = normal_i.Dot(ij);
-// 													const double d1 = normal_j.Dot(-1.0 * ij);
-// 
-// 													/* Continue if patches facing each other */
-// 													if (d0 > 0.0 && d1 > 0.0)
-// 													{
-// 														/* Sample form factor */
-// 														const double K = d0 * d1 /
-// 															(M_PI * (xj - xi).LengthSquared());
-// 
-// 														/* Add weighted sample to estimate */
-// 														F += K / pdf;
-// 													}
-// 												}
-// 											}
-// 										}
-// 									}
-// 
-// 									/* Divide by number of mSamples */
-// 									F /= (Ni)* (Ni)* (Nj)* (Nj);
-// 
-// 									mFormFactor[patch_i * mPatchCount + patch_j] = F;
-// 								}
-// 								patch_j++;
-// 							}
-// 						}
-// 					}
-// 					patch_i++;
-// 				}
-// 			}
-// 
-// 			cout << std::endl;
-// 		}
-// 
-// 		/* Copy upper to lower triangular values */
-// 		for (auto i = 0u; i < mPatchCount - 1; i++)
-// 		{
-// 			for (auto j = i + 1; j < mPatchCount; j++)
-// 			{
-// 				mFormFactor[j * mPatchCount + i] = mFormFactor[i * mPatchCount + j];
-// 			}
-// 		}
-// 
-// 		/* Divide by area to get final form factors */
-// 		for (auto i = 0u; i < mPatchCount; i++)
-// 		{
-// 			for (auto j = 0u; j < mPatchCount; j++)
-// 			{
-// 				mFormFactor[i * mPatchCount + j] /= patch_area[i];
-// 
-// 				/* Clamp to [0,1] */
-// 				if (mFormFactor[i * mPatchCount + j] > 1.0)
-// 					mFormFactor[i * mPatchCount + j] = 1.0;
-// 			}
-// 		}
+		/* 1D-array with patch areas */
+		std::vector<double> patch_area(mPatchCount);
+		memset(patch_area.data(), 0, sizeof(double)* mPatchCount);
+
+		/* Precompute patch areas, assuming same size for each rectangle */
+		for (int i = 0; i < n; i++)
+		{
+			int patch_i = 0;
+			for (int k = 0; k < i; k++)
+				patch_i += mTriangles[k].getSubTriangleCount();
+
+			for (int iSub = 0; iSub < mTriangles[i].getSubTriangleCount(); iSub++)
+			{
+				patch_area[patch_i + iSub] = mTriangles[i].area();
+			}
+		}
+
+		/* Offsets for indexing of patches in 1D-array */
+		std::vector<int> offset(n);
+
+		for (int i = 0; i < n; i++)
+		{
+			offset[i] = 0;
+			for (int k = 0; k < i; k++)
+				offset[i] += mTriangles[k].getSubTriangleCount();
+		}
+
+		/* Loop over all rectangles in scene */
+		for (int i = 0; i < n; i++)
+		{
+			int patch_i = offset[i];
+
+			std::cout << i << " ";
+
+			/* Loop over all patches in rectangle i */
+			for (int iSub = 0; iSub < mTriangles[i].getSubTriangleCount(); iSub++)
+			{
+				std::cout << "*" << std::flush;
+
+				const Vector normal_i = mTriangles[i].getNormal();
+
+				int patch_j = 0;
+
+				/* Loop over all rectangles in scene for rectangle i */
+				for (int j = 0; j < n; j++)
+				{
+					const Vector normal_j = mTriangles[j].getNormal();
+
+					/* Loop over all patches in rectangle j */
+					for (int jSub = 0; jSub < mTriangles[j].getSubTriangleCount(); jSub++)
+					{
+						/* Do not compute form factors for patches on same rectangle;
+						also exploit symmetry to reduce computation;
+						intemediate values; will be divided by patch area below */
+						if (i < j)
+						{
+							double F = 0;
+
+							/* Monte Carlo integration of form factor double integral */
+							const int Ni = mc_sample, Nj = mc_sample;
+
+							/* Uniform PDF for Monte Carlo (1/Ai)x(1/Aj) */
+							const double pdf =
+								(1.0 / patch_area[offset[i] + iSub]) *
+								(1.0 / patch_area[offset[j] + jSub]);
+
+
+
+							const Vector xi = mTriangles[i].point_inside();
+							const Vector xj = mTriangles[j].point_inside();
+
+							/* Check for visibility between sample points */
+							const Vector ij = (xj - xi).Normalized();
+
+							double t;
+							int id;
+							Vector normal;
+							if (Intersect_Scene(Ray(xi, ij), &t, &id, &normal) &&
+								id != j)
+							{
+								continue; /* If intersection with other rectangle */
+							}
+
+							/* Cosines of angles beteen normals and ray inbetween */
+							const double d0 = normal_i.Dot(ij);
+							const double d1 = normal_j.Dot(-1.0 * ij);
+
+							/* Continue if patches facing each other */
+							if (d0 > 0.0 && d1 > 0.0)
+							{
+								/* Sample form factor */
+								const double K = d0 * d1 /
+									(M_PI * (xj - xi).LengthSquared());
+
+								/* Add weighted sample to estimate */
+								F += K / pdf;
+							}
+
+
+
+
+							mFormFactor[patch_i * mPatchCount + patch_j] = F;
+						}
+						patch_j++;
+						
+					}
+				}
+				patch_i++;
+
+			}
+
+			std::cout << std::endl;
+		}
+
+		/* Copy upper to lower triangular values */
+		for (auto i = 0u; i < mPatchCount - 1; i++)
+		{
+			for (auto j = i + 1; j < mPatchCount; j++)
+			{
+				mFormFactor[j * mPatchCount + i] = mFormFactor[i * mPatchCount + j];
+			}
+		}
+
+		/* Divide by area to get final form factors */
+		for (auto i = 0u; i < mPatchCount; i++)
+		{
+			for (auto j = 0u; j < mPatchCount; j++)
+			{
+				mFormFactor[i * mPatchCount + j] /= patch_area[i];
+
+				/* Clamp to [0,1] */
+				if (mFormFactor[i * mPatchCount + j] > 1.0)
+					mFormFactor[i * mPatchCount + j] = 1.0;
+			}
+		}
 	}
 
 	/******************************************************************
@@ -404,45 +372,39 @@ private:
 	*******************************************************************/
 	void Calculate_Radiosity(const int iteration)
 	{
-		return;
-// 
-// 		const int n = mRectangles.size();
-// 		int patch_i = 0;
-// 
-// 		for (int i = 0; i < n; i++)
-// 		{
-// 			for (int ia = 0; ia < mRectangles[i].a_num; ia++)
-// 			{
-// 				for (int ib = 0; ib < mRectangles[i].b_num; ib++)
-// 				{
-// 					Color B;
-// 
-// 					int patch_j = 0;
-// 					for (int j = 0; j < n; j++)
-// 					{
-// 						for (int ja = 0; ja < mRectangles[j].a_num; ja++)
-// 						{
-// 							for (int jb = 0; jb < mRectangles[j].b_num; jb++)
-// 							{
-// 								const double Fij = mFormFactor[patch_i * mPatchCount + patch_j];
-// 
-// 								/* Add form factor multiplied with radiosity of previous step */
-// 								if (Fij > 0.0)
-// 									B = B + Fij * mRectangles[j].patch[ja * mRectangles[j].b_num + jb];
-// 
-// 								patch_j++;
-// 							}
-// 						}
-// 					}
-// 					/* Multiply sum with color of patch and add emission */
-// 					B = mRectangles[i].color.MultComponents(B) + mRectangles[i].emission;
-// 
-// 					/* Store overall patch radiosity of current iteration */
-// 					mRectangles[i].patch[ia * mRectangles[i].b_num + ib] = B;
-// 					patch_i++;
-// 				}
-// 			}
-// 		}
+		const int n = mTriangles.size();
+		int patch_i = 0;
+
+		for (auto i = 0u; i < n; i++)
+		{
+			for (auto iSub = 0u; iSub < mTriangles[i].getSubTriangleCount(); iSub++)
+			{
+				Color B;
+
+				int patch_j = 0;
+				for (auto j = 0u; j < n; j++)
+				{
+					for (auto jSub = 0u; jSub < mTriangles[j].getSubTriangleCount(); jSub++)
+					{
+						const double Fij = mFormFactor[patch_i * mPatchCount + patch_j];
+
+						/* Add form factor multiplied with radiosity of previous step */
+						if (Fij > 0.0)
+							B = B + Fij * mTriangles[j].getSubTriangle(jSub).getColor();
+
+						patch_j++;
+					}
+				}
+
+
+				/* Multiply sum with color of patch and add emission */
+				B = mTriangles[i].getColor().MultComponents(B) + mTriangles[i].getEmission();
+
+				/* Store overall patch radiosity of current iteration */
+				mTriangles[i].getSubTriangle(iSub).setColor(B);
+				patch_i++;
+			}
+		}
 	}
 
 	/******************************************************************
@@ -459,7 +421,7 @@ private:
 		auto idSub = 0u;
 		if (!tri.intersectsSub(ray, distance, idSub))
 			assert("No intersection");
-				
+
 		const auto& subTri = tri.getSubTriangle(idSub);
 
 		/* Bicubic interpolation for smooth image */
