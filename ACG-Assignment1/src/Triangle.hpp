@@ -59,6 +59,13 @@ public:
 		#define DOT(a,b) (a).Dot(b)
 		#define EPSILON 0.000001f
 
+
+		// implementing the single/double sided feature
+		if (DOT(ray.dir, _normal) > 0)
+			return false; // back-facing surface 
+
+
+
 		//Find vectors for two edges sharing V1
 		e1 = V2 - V1;
 		e2 = V3 - V1;
