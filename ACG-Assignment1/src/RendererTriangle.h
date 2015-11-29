@@ -136,7 +136,7 @@ public:
 							Vector start = camera.org + dir * 130.0;
 							auto ray = Ray(start, dir.Normalized());
 
-							/* Find intersected rectangle */
+							/* Find intersected triangle */
 							double distance;
 							int id;
 							Vector normal;
@@ -407,6 +407,7 @@ private:
 	Color Radiance(unsigned int id, double distance, const Ray& ray, const int depth, bool interpolation = true)
 	{
 		const auto& tri = mTriangles[id];
+	
         /* Check for plane-ray intersection first */
         const Vector hitpoint = ray.org + distance * ray.dir;
 
@@ -419,6 +420,32 @@ private:
 		/* Bicubic interpolation for smooth image */
 		if (interpolation)
 		{
+			auto col = Color(0, 0, 0);
+			std::vector<Triangle> adjacent;
+
+			adjacent.push_back(subTri);
+
+			tri.getAdjacentTriangles(subTri, adjacent);
+
+			const auto& triB = (id % 2) == 0 ? mTriangles[id + 1] : mTriangles[id - 1];
+			triB.getAdjacentTriangles(subTri, adjacent);
+
+			auto distanceTotal = 0.0;
+			for (const auto& t : adjacent)
+			{
+				distanceTotal += (hitpoint - t.center()).Length();
+			}
+
+			for(const auto& t : adjacent)
+			{
+				auto factor = 1 - (hitpoint - t.center()).Length() / distanceTotal;
+
+				col += (t.getColor() - col) * factor;
+			}
+
+			return col;
+
+	
 			Triangle neighbours[4];
 			tri.getNeighbours(idSub, neighbours);
             
