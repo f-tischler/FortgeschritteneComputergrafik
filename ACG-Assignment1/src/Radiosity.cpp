@@ -39,20 +39,15 @@
 #include "Scene.hpp"
 
 
-
-
-
-
 int main(int argc, char **argv) 
 {
-
-	int width = 640;
-	int height = 480;
+	int width = 320;
+	int height = 240;
 	int samples = 1;
 
 	//RendererRectangles renderer(width, height, samples);
 	RendererTriangles renderer(width, height, samples);
-	renderer.buildScene(getScene());
+	renderer.buildScene(getScene2());
 
 	Image img(width, height);
 	Image img_interpolated(width, height);
@@ -63,7 +58,7 @@ int main(int argc, char **argv)
 	img_interpolated.Save("image_smooth.ppm");
 
 	system("image_patches.ppm");
-	system("image_smooth.ppm");
+	//system("image_smooth.ppm");
 
 	return 0;
 }

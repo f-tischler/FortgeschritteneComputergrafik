@@ -38,15 +38,15 @@ public:
 		Vector cy = (cx.Cross(camera.dir)).Normalized() * 0.5135;
 
 		std::cout << "Calculating form factors" << std::endl;
-		int patches_a = 4;
-		int patches_b = 4;
+		int patches_a = 1;
+		int patches_b = 8;
 		int MC_mSamples = 3;
 
 		Calculate_Form_Factors(patches_a, patches_b, MC_mSamples);
 
 		/* Iterative solution of radiosity linear system */
 		std::cout << "Calculating radiosity" << std::endl;
-		int iterations = 40;
+		int iterations = 1;
 		for (int i = 0; i < iterations; i++)
 		{
 			std::cout << i << " ";
@@ -182,8 +182,7 @@ public:
 
 			/* 1D-array to hold form factor pairs */
 			mFormFactor.clear();
-			mFormFactor.resize(mFormFactor_num);
-			memset(mFormFactor.data(), 0, sizeof(double)* mFormFactor_num);
+			mFormFactor.resize(mFormFactor_num, 0.0);
 
 			/* 1D-array with patch areas */
 			double *patch_area = new double[mPatchCount];

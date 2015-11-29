@@ -20,7 +20,7 @@ public:
 	{
 	}
 
-	virtual void buildScene(const std::vector<Rectangle>& rects){};
+	virtual void buildScene(const std::vector<Rectangle>& rects) = 0;
 
 	virtual void Render(Image& normal, Image& smoothed) = 0;
 };

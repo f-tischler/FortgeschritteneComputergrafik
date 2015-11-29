@@ -20,11 +20,11 @@ public:
         auto edgeACrossEdgeB = edgeA.Cross(edgeB);
 
 		_normal = edgeACrossEdgeB.Normalized();
-		_a = edgeACrossEdgeB.Length();
+		_a = edgeACrossEdgeB.Length() / 2.0;
 	}
 
 	double area() const { return _a; }
-	Vector normal() const { return _normal; }
+	const Vector& normal() const { return _normal; }
 
 	bool intersectsSub(const Ray &ray, double& distance, unsigned int& subIndex) const
 	{
@@ -33,6 +33,7 @@ public:
 			double tmp;
 			if (_subTriangles[i].intersects(ray, tmp))
 			{
+				distance = tmp;
 				subIndex = i;
 				return true;
 			}
@@ -120,6 +121,25 @@ public:
 		out[2] = Triangle(midP1P0, _p1, midP2P1, _emission, _color);
 		out[3] = Triangle(midP2P1, _p2, midP2P0, _emission, _color);
 
+		const auto epsilon = 0.00001f;
+		const auto epsilonVec = Vector(epsilon, epsilon, epsilon);
+
+		assert(Vector::AreEqual(normal(),
+								out[0].normal(),
+								epsilonVec) && "normals of subtriangles must match the parent's");
+
+		assert(Vector::AreEqual(normal(),
+								out[1].normal(),
+								epsilonVec) && "normals of subtriangles must match the parent's");
+
+		assert(Vector::AreEqual(normal(),
+								out[2].normal(),
+								epsilonVec) && "normals of subtriangles must match the parent's");
+
+		assert(Vector::AreEqual(normal(),
+								out[3].normal(),
+								epsilonVec) && "normals of subtriangles must match the parent's");
+
 // 
 // 		//For testing interpolation
 // 		out[0] = Triangle(midP1P0, midP2P1, midP2P0, _emission, _color*0.2);
@@ -155,12 +175,12 @@ public:
 		Triangle tmp[4];
 		tri.split(tmp);
 
-		for (auto tri : tmp)
+		for (const auto& t : tmp)
 		{
 			if (divisions == 1)
-				_subTriangles.push_back(tri);
+				_subTriangles.push_back(t);
 			else
-				splitRec(divisions - 1, tri);
+				splitRec(divisions - 1, t);
 		}
 	}
 
