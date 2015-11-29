@@ -160,7 +160,7 @@ public:
 
 	Vector point_inside() const
 	{
-		static std::default_random_engine rnd;
+		static std::default_random_engine rnd(static_cast<size_t>(time(nullptr)));
 		static std::uniform_real_distribution<double> rng(0.0, 1.0);
 
 		auto e0 = rng(rnd);
