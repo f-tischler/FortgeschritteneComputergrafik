@@ -77,7 +77,7 @@ public:
 
 		/* Iterative solution of radiosity linear system */
 		std::cout << "Calculating radiosity" << std::endl;
-		const auto iterations = 1;
+		const auto iterations = 10;
 		for (auto i = 0; i < iterations; i++)
 		{
 			std::cout << i << " ";
@@ -275,46 +275,59 @@ private:
 							double F = 0;
 
 							/* Monte Carlo integration of form factor double integral */
-							// const auto Ni = mc_sample, Nj = mc_sample;
+							const auto Ni = mc_sample, Nj = mc_sample;
 
 							/* Uniform PDF for Monte Carlo (1/Ai)x(1/Aj) */
 							const auto pdf =
 								(1.0 / patch_area[offset[i] + iSub]) *
 								(1.0 / patch_area[offset[j] + jSub]);
 
-							const auto xi = mTriangles[i].getSubTriangle(iSub).point_inside();
-							const auto xj = mTriangles[j].getSubTriangle(jSub).point_inside();
-
-							/* Check for visibility between sample points */
-							const auto ij = (xj - xi).Normalized();
-
-							double t;
-							int id;
-							Vector normal;
-							if (Intersect_Scene(Ray(xi, ij), &t, &id, &normal) &&
-								id != j)
+							for (auto ias = 0; ias < Ni; ias++)
 							{
-								continue; /* If intersection with other rectangle */
+								for (auto ibs = 0; ibs < Ni; ibs++)
+								{
+									for (auto jas = 0; jas < Nj; jas++)
+									{
+										for (auto jbs = 0; jbs < Nj; jbs++)
+										{
+											const auto xi = mTriangles[i].getSubTriangle(iSub).point_inside();
+											const auto xj = mTriangles[j].getSubTriangle(jSub).point_inside();
+
+											/* Check for visibility between sample points */
+											const auto ij = (xj - xi).Normalized();
+
+											double t;
+											int id;
+											Vector normal;
+											if (Intersect_Scene(Ray(xi, ij), &t, &id, &normal) &&
+												id != j)
+											{
+												continue; /* If intersection with other rectangle */
+											}
+
+											/* Cosines of angles beteen normals and ray inbetween */
+											const auto d0 = normal_i.Dot(ij);
+											const auto d1 = normal_j.Dot(-1.0 * ij);
+
+											/* Continue if patches facing each other */
+											if (d0 > 0.0 && d1 > 0.0)
+											{
+												/* Sample form factor */
+												const auto K = d0 * d1 /
+													(M_PI * (xj - xi).LengthSquared());
+
+												/* Add weighted sample to estimate */
+												F += K / pdf;
+											}
+										}
+									}
+								}
 							}
 
-							/* Cosines of angles beteen normals and ray inbetween */
-							const auto d0 = normal_i.Dot(ij);
-							const auto d1 = normal_j.Dot(-1.0 * ij);
-
-							/* Continue if patches facing each other */
-							if (d0 > 0.0 && d1 > 0.0)
-							{
-								/* Sample form factor */
-								const auto K = d0 * d1 /
-									(M_PI * (xj - xi).LengthSquared());
-
-								/* Add weighted sample to estimate */
-								F += K / pdf;
-							}
+							/* Divide by number of mSamples */
+							F /= Ni* Ni* Nj* Nj;
 
 							mFormFactor[patch_i * mPatchCount + patch_j] = F;
-							
-							
 						}	
 						
 						patch_j++;			
@@ -387,6 +400,7 @@ private:
 
 				/* Store overall patch radiosity of current iteration */
 				mTriangles[i].getSubTriangle(iSub).setColor(B);
+
 				patch_i++;
 			}
 		}

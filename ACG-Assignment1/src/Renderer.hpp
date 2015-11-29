@@ -16,7 +16,7 @@ public:
 		mWidth(width),
 		mHeight(height),
 		mSamples(samples),
-		mClearColor(0,0,0)
+		mClearColor(0,1,1)
 	{
 	}
 

@@ -6,6 +6,7 @@
 
 #include <cassert>
 #include <vector>
+#include <random>
 
 class Triangle
 {
@@ -19,8 +20,8 @@ public:
 		auto edgeB = _p2 - _p0;
         auto edgeACrossEdgeB = edgeA.Cross(edgeB);
 
-		_normal = edgeACrossEdgeB.Normalized();
 		_a = edgeACrossEdgeB.Length() / 2.0;
+		_normal = edgeACrossEdgeB.Normalized();
 	}
 
 	double area() const { return _a; }
@@ -123,10 +124,10 @@ public:
 		auto midP2P0 = _p0 + (_p2 - _p0) / 2;
 		auto midP2P1 = _p1 + (_p2 - _p1) / 2;
 
-		out[0] = Triangle(midP1P0, midP2P1, midP2P0, _emission, _color);
-		out[1] = Triangle(_p0, midP1P0, midP2P0, _emission, _color);
-		out[2] = Triangle(midP1P0, _p1, midP2P1, _emission, _color);
-		out[3] = Triangle(midP2P1, _p2, midP2P0, _emission, _color);
+		out[0] = Triangle(midP1P0, midP2P1, midP2P0, _emission, Color(0, 0 ,0));
+		out[1] = Triangle(_p0, midP1P0, midP2P0, _emission, Color(0, 0, 0));
+		out[2] = Triangle(midP1P0, _p1, midP2P1, _emission, Color(0, 0, 0));
+		out[3] = Triangle(midP2P1, _p2, midP2P0, _emission, Color(0, 0, 0));
 
 		const auto epsilon = 0.00001f;
 		const auto epsilonVec = Vector(epsilon, epsilon, epsilon);
@@ -157,7 +158,21 @@ public:
 
 	Vector point_inside() const
 	{
-		return (_p0 + _p1 + _p2) / 3;
+		static std::default_random_engine rnd;
+		static std::uniform_real_distribution<double> rng(0.0, 1.0);
+
+		auto e0 = rng(rnd);
+		auto e1 = rng(rnd);
+
+		auto rootE0 = std::sqrt(e0);
+
+		auto l0 = 1 - rootE0;
+		auto l1 = e1 * rootE0;
+		auto l2 = 1 - l0 - l1;
+
+		return l0 * _p0 + l1 * _p1 + l2 * _p2;
+
+		//return (_p0 + _p1 + _p2) / 3;
 	}
 
 	void init_patchs(const int divisions)
