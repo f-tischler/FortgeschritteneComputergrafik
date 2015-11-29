@@ -224,6 +224,7 @@ public:
 	const Vector& getP1() const { return _p0; }
 	const Vector& getP2() const { return _p1; }
 	const Vector& getP3() const { return _p2; }
+    const double getA() const { return _a; }
 
 private:
 	Vector _p0, _p1, _p2, _normal;
