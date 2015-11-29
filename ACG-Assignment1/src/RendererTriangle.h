@@ -28,6 +28,9 @@ public:
 		if (!mTriangles.empty())
 			mTriangles.clear();
 
+		const auto epsilon = 0.00001f;
+		const auto epsilonVec = Vector(epsilon, epsilon, epsilon);
+
 		mTriangles.reserve(rects.size() * 2);
 		for (auto rect : rects)
 		{
@@ -41,10 +44,6 @@ public:
 			
 			//std::cout << "t1: " << t1.normal().toString() << std::endl;	
 			//std::cout << "t2: " << t2.normal().toString() << std::endl;
-
-			const auto epsilon = 0.00001f;
-			const auto epsilonVec = Vector(epsilon, epsilon, epsilon);
-
 			assert(Vector::AreEqual(rect.normal,
 									t1.normal(),
 									epsilonVec) &&
@@ -57,6 +56,40 @@ public:
 
 			mTriangles.emplace_back(std::move(t1));
 			mTriangles.emplace_back(std::move(t2));
+		}
+
+		for (int i = 0; i < mTriangles.size(); i++)
+		{
+			Vector src[3];
+			Vector cmp[3];
+
+			src[0] = mTriangles[i].getP1();
+			src[1] = mTriangles[i].getP2();
+			src[2] = mTriangles[i].getP3();
+
+			for (int j = 0; j < mTriangles.size(); j++)
+			{
+				if (i==j)
+					continue;
+
+				cmp[0] = mTriangles[j].getP1();
+				cmp[1] = mTriangles[j].getP2();
+				cmp[2] = mTriangles[j].getP3();
+
+				int found = 0;
+				int x;
+				for (x = 0; x < 3; x++)
+				{
+					for (int y = 0; y < 3; y++)
+					{
+						if (Vector::AreEqual(src[x], cmp[y], epsilonVec))
+							found++;
+					}
+				}
+
+				if (found > 2)
+					mTriangles[i].addNeighbour(&mTriangles[j]);
+			}
 		}
 	}
 
@@ -428,16 +461,17 @@ private:
 		/* Bicubic interpolation for smooth image */
 		if (interpolation)
 		{
-			Triangle neighbours[4];
-			tri.getNeighbours(idSub, neighbours);
-            
-            auto A1 = (tri.getP2() - hitpoint).Cross(tri.getP3() - hitpoint).Length();
-            auto A2 = (tri.getP1() - hitpoint).Cross(tri.getP3() - hitpoint).Length();
-            auto lambda1 = A1 / tri.getA();
-            auto lambda2 = A2 / tri.getA();
-            auto lambda3 = 1 - lambda1 - lambda2;
+			auto neighbours = tri.getNeighbours();
+			return Color();
 
-            return (lambda1 * neighbours[1].getColor() + lambda2 * neighbours[2].getColor() + lambda3 * neighbours[3].getColor()) * Over_M_PI;
+
+//             auto A1 = (tri.getP2() - hitpoint).Cross(tri.getP3() - hitpoint).Length();
+//             auto A2 = (tri.getP1() - hitpoint).Cross(tri.getP3() - hitpoint).Length();
+//             auto lambda1 = A1 / tri.getA();
+//             auto lambda2 = A2 / tri.getA();
+//             auto lambda3 = 1 - lambda1 - lambda2;
+// 
+// 			return (lambda1 * neighbours[1]->getColor() + lambda2 * neighbours[2]->getColor() + lambda3 * neighbours[3]->getColor()) * Over_M_PI;
 		}
 		else
 		{

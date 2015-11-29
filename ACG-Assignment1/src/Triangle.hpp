@@ -27,6 +27,8 @@ public:
 	double area() const { return _a; }
 	const Vector& normal() const { return _normal; }
 
+	void addNeighbour(Triangle* neighbour) { _neighbors.push_back(neighbour); }
+
 	bool intersectsSub(const Ray &ray, double& distance, unsigned int& subIndex) const
 	{
 		for (unsigned int i = 0; i < _subTriangles.size(); i++)
@@ -181,15 +183,9 @@ public:
 		splitRec(divisions, *this);
 	}
 
-	void getNeighbours(unsigned int subIndex, Triangle* neighbours) const
+	const std::vector<Triangle*>& getNeighbours() const
 	{
-		int pos = subIndex % 4;
-		int startIndex = subIndex - pos;
-
-		neighbours[0] = getSubTriangle(startIndex);
-		neighbours[1] = getSubTriangle(startIndex+1);
-		neighbours[2] = getSubTriangle(startIndex+2);
-		neighbours[3] = getSubTriangle(startIndex+3);
+		return _neighbors;
 	}
 
 	void splitRec(int divisions, const Triangle& tri)
@@ -229,6 +225,7 @@ public:
 private:
 	Vector _p0, _p1, _p2, _normal;
 	Color _emission, _color;
+	std::vector<Triangle*> _neighbors;
 
 	double _a;
 	std::vector<Triangle> _subTriangles;
