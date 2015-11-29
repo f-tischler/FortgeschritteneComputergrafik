@@ -64,5 +64,6 @@ int main(int argc, char **argv)
 
 	system("image_patches.ppm");
 	system("image_smooth.ppm");
+
 	return 0;
 }

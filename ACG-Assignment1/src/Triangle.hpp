@@ -107,7 +107,7 @@ public:
 		return false;
 	}
 
-	unsigned int getSubTriangleCount() { return _subTriangles.size(); }
+	unsigned int getSubTriangleCount() const { return _subTriangles.size(); }
 
 	void split(Triangle(&out)[4]) const
 	{

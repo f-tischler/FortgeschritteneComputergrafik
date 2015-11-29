@@ -2,6 +2,9 @@
 #define Math_H_included
 
 #include <cmath>
+#include <cassert>
+#include <sstream>
+#include <iomanip>
 
 /*------------------------------------------------------------------
 | Struct for standard vector operations in 3D
@@ -78,6 +81,25 @@ public:
 		return Vector((y * b.z) - (z * b.y),
 			(z * b.x) - (x * b.z),
 			(x * b.y) - (y * b.x));
+	}
+
+	std::string toString() const
+	{
+		std::stringstream stream;
+		stream << std::setprecision(3);
+		stream << "(" << x << ", " << y << ", " << z << ")";
+		return stream.str();
+	}
+
+	static bool AreEqual(const Vector& lhs, const Vector& rhs, const Vector& epsilon)
+	{
+		assert(epsilon.x > 0 && "epsilon values must be greater than zero");
+		assert(epsilon.y > 0 && "epsilon values must be greater than zero");
+		assert(epsilon.z > 0 && "epsilon values must be greater than zero");
+
+		return  (std::abs(lhs.x - rhs.x) < epsilon.x) &&
+				(std::abs(lhs.y - rhs.y) < epsilon.y) &&
+				(std::abs(lhs.z - rhs.z) < epsilon.z);
 	}
 };
 

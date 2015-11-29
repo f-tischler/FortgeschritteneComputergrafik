@@ -61,8 +61,20 @@ public:
 			auto tr = rect.p0 + rect.edge_a;
 			auto br = bl + rect.edge_a;
 
-			mTriangles[i++] = Triangle(tl, bl, tr, rect.emission, rect.color);
-			mTriangles[i++] = Triangle(bl, tr, br, rect.emission, rect.color);
+			auto t1 = Triangle(tl, tr, bl, rect.emission, rect.color);
+			auto t2 = Triangle(bl, tr, br, rect.emission, rect.color);
+			
+			std::cout << "t1: " << t1.normal().toString() << std::endl;	
+			std::cout << "t2: " << t2.normal().toString() << std::endl;
+
+			auto epsilon = 0.00001f;
+			assert(Vector::AreEqual(t1.normal(), 
+									t2.normal(), 
+									Vector(epsilon, epsilon, epsilon)) &&
+				   "normals for the rectangle must match");
+
+			mTriangles[i++] = t1;
+			mTriangles[i++] = t2;
 		}
 	}
 
@@ -214,9 +226,6 @@ private:
 			mTriangles[i].init_patchs(divisions);
 			mPatchCount += (unsigned int)pow(4, divisions);
 		}
-
-
-
 
 		std::cout << "Number of triangles: " << n << std::endl;
 		std::cout << "Number of patches: " << mPatchCount << std::endl;
