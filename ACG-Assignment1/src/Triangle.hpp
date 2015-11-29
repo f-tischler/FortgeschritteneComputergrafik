@@ -175,6 +175,11 @@ public:
 		//return (_p0 + _p1 + _p2) / 3;
 	}
 
+	Vector center() const
+	{
+		return (_p0 + _p1 + _p2) / 3.0;
+	}
+
 	void init_patchs(const int divisions)
 	{
 		_subTriangles.clear();
@@ -217,6 +222,50 @@ public:
 	}
 
 	void setColor(const Color& color) { _color = color; }
+
+	void getAdjacentTriangles(const Triangle& tri, std::vector<Triangle>& out) const
+	{
+		const auto epsilon = 0.00001f;
+		const auto e = Vector(epsilon, epsilon, epsilon);
+
+		auto added = 0;
+		for(const auto& t : _subTriangles)
+		{
+			auto matches = 0;
+			
+			if(Vector::AreEqual(tri.getP1(), t.getP1(), e) ||
+			   Vector::AreEqual(tri.getP1(), t.getP2(), e) ||
+			   Vector::AreEqual(tri.getP1(), t.getP3(), e))
+			{
+				matches++;
+			}
+
+			if (Vector::AreEqual(tri.getP2(), t.getP1(), e) ||
+				Vector::AreEqual(tri.getP2(), t.getP2(), e) ||
+				Vector::AreEqual(tri.getP2(), t.getP3(), e))
+			{
+				matches++;
+			}
+
+			if(matches >= 1)
+			{
+				if (Vector::AreEqual(tri.getP3(), t.getP1(), e) ||
+					Vector::AreEqual(tri.getP3(), t.getP2(), e) ||
+					Vector::AreEqual(tri.getP3(), t.getP3(), e))
+				{
+					matches++;
+				}
+
+				if(matches == 2)
+				{
+					out.push_back(t);
+					added++;
+
+					if (added == 3) break;
+				}
+			}
+		}
+	}
 
 	const Color& getEmission() const { return _emission; }
 	const Color& getColor() const { return _color; }
