@@ -416,6 +416,8 @@ private:
 	Color Radiance(unsigned int id, double distance, const Ray& ray, const int depth, bool interpolation = true)
 	{
 		const auto& tri = mTriangles[id];
+        /* Check for plane-ray intersection first */
+        const Vector hitpoint = ray.org + distance * ray.dir;
 
 		auto idSub = 0u;
 		if (!tri.intersectsSub(ray, distance, idSub))
@@ -426,16 +428,16 @@ private:
 		/* Bicubic interpolation for smooth image */
 		if (interpolation)
 		{
-			Triangle neigbours[4];
-			tri.getNeighbours(idSub, neigbours);
+			Triangle neighbours[4];
+			tri.getNeighbours(idSub, neighbours);
+            
+            auto A1 = (tri.getP2() - hitpoint).Cross(tri.getP3() - hitpoint).Length();
+            auto A2 = (tri.getP1() - hitpoint).Cross(tri.getP3() - hitpoint).Length();
+            auto lambda1 = A1 / tri.getA();
+            auto lambda2 = A2 / tri.getA();
+            auto lambda3 = 1 - lambda1 - lambda2;
 
-			Color c[4];
-			c[0] = neigbours[0].getColor();
-			c[1] = neigbours[1].getColor();
-			c[2] = neigbours[2].getColor();
-			c[3] = neigbours[3].getColor();
-
-			return cubicInterpolate(c, 0.5f) * Over_M_PI;
+            return (lambda1 * neighbours[1].getColor() + lambda2 * neighbours[2].getColor() + lambda3 * neighbours[3].getColor()) * Over_M_PI;
 		}
 		else
 		{
