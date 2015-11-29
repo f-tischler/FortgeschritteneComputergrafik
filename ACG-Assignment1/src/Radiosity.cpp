@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 	img_interpolated.Save("image_smooth.ppm");
 
 	system("image_patches.ppm");
-	//system("image_smooth.ppm");
+	system("image_smooth.ppm");
 
 	return 0;
 }
