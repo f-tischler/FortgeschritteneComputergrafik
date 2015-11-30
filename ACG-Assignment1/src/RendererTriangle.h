@@ -8,13 +8,14 @@
 #include "Triangle.hpp"
 
 #define drand48() (((double)rand())/((double)RAND_MAX))
+#include <algorithm>
 
 class RendererTriangles : public Renderer
 {
 	const double Over_M_PI = 1.0 / M_PI;
 
 	std::vector<double> mFormFactor;
-	unsigned int mPatchCount;
+	size_t mPatchCount;
 	std::vector<Triangle> mTriangles;
 
 public:
@@ -70,14 +71,14 @@ public:
 		auto cy = (cx.Cross(camera.dir)).Normalized() * 0.5135;
 
 		std::cout << "Calculating form factors" << std::endl;
-		const auto divisions = 2; // subtriangleCount = 4^divisions
-		const int MC_mSamples = 3;
+		const auto divisions = 3; // subtriangleCount = 4^divisions
+		const int MC_mSamples = 20;
 
 		Calculate_Form_Factors(divisions, MC_mSamples);
 
 		/* Iterative solution of radiosity linear system */
 		std::cout << "Calculating radiosity" << std::endl;
-		const auto iterations = 10;
+		const auto iterations = 40;
 		for (auto i = 0; i < iterations; i++)
 		{
 			std::cout << i << " ";
@@ -85,7 +86,7 @@ public:
 		}
 		std::cout << std::endl;
 
-		std::default_random_engine engine(static_cast<size_t>(time(nullptr)));
+		std::default_random_engine engine(static_cast<unsigned int>(time(nullptr)));
 		std::uniform_real_distribution<double> rng(0.0, 2.0);
 
 		/* Loop over image rows */
@@ -173,7 +174,7 @@ private:
 	*******************************************************************/
 	bool Intersect_Scene(const Ray &ray, double *t, int *id, Vector *normal)
 	{
-		const int n = mTriangles.size();
+		const size_t n = mTriangles.size();
 		*t = 1e20;
 		*id = -1;
 
@@ -214,7 +215,7 @@ private:
 
 		std::cout << "Number of triangles: " << n << std::endl;
 		std::cout << "Number of patches: " << mPatchCount << std::endl;
-		int mFormFactor_num = mPatchCount * mPatchCount;
+		size_t mFormFactor_num = mPatchCount * mPatchCount;
 		std::cout << "Number of form factors: " << mFormFactor_num << std::endl;
 
 		/* 1D-array to hold form factor pairs */
@@ -225,21 +226,21 @@ private:
 		std::vector<double> patch_area(mPatchCount, 0.0);
 
 		/* Offsets for indexing of patches in 1D-array */
-		std::vector<int> offset(n);
+		std::vector<size_t> offset(n);
 
-		for (auto i = 0; i < n; i++)
+		for (auto i = 0u; i < n; i++)
 		{
 			offset[i] = 0;
-			for (auto k = 0; k < i; k++)
+			for (auto k = 0u; k < i; k++)
 				offset[i] += mTriangles[k].getSubTriangleCount();
 		}
 
 		/* Precompute patch areas, assuming same size for each rectangle */
-		for (auto i = 0; i < n; i++)
+		for (auto i = 0u; i < n; i++)
 		{
 			auto patch_i = offset[i];
 
-			for (auto iSub = 0; iSub < mTriangles[i].getSubTriangleCount(); iSub++)
+			for (auto iSub = 0u; iSub < mTriangles[i].getSubTriangleCount(); iSub++)
 			{
 				patch_area[patch_i + iSub] = mTriangles[i].getSubTriangle(iSub).area();
 			}
@@ -247,14 +248,14 @@ private:
 
 
 		/* Loop over all rectangles in scene */
-		for (auto i = 0; i < n; i++)
+		for (auto i = 0u; i < n; i++)
 		{
 			auto patch_i = offset[i];
 
 			std::cout << i << " ";
 
 			/* Loop over all patches in rectangle i */
-			for (auto iSub = 0; iSub < mTriangles[i].getSubTriangleCount(); iSub++)
+			for (auto iSub = 0u; iSub < mTriangles[i].getSubTriangleCount(); iSub++)
 			{
 				std::cout << "*" << std::flush;
 
@@ -263,12 +264,12 @@ private:
 				auto patch_j = 0;
 
 				/* Loop over all rectangles in scene for rectangle i */
-				for (auto j = 0; j < n; j++)
+				for (auto j = 0u; j < n; j++)
 				{
 					const auto normal_j = mTriangles[j].getNormal();
 
 					/* Loop over all patches in rectangle j */
-					for (auto jSub = 0; jSub < mTriangles[j].getSubTriangleCount(); jSub++)
+					for (auto jSub = 0u; jSub < mTriangles[j].getSubTriangleCount(); jSub++)
 					{
 						/* Do not compute form factors for patches on same rectangle;
 						also exploit symmetry to reduce computation;
@@ -284,8 +285,8 @@ private:
 
 							for (auto samples = 0; samples < mc_sample; samples++)
 							{
-								const auto xi = mTriangles[i].getSubTriangle(iSub).point_inside();
-								const auto xj = mTriangles[j].getSubTriangle(jSub).point_inside();
+								const auto xi = mTriangles[i].getSubTriangle(iSub).center();
+								const auto xj = mTriangles[j].getSubTriangle(jSub).center();
 
 								/* Check for visibility between sample points */
 								const auto ij = (xj - xi).Normalized();
@@ -361,7 +362,7 @@ private:
 	*******************************************************************/
 	void Calculate_Radiosity(const int iteration)
 	{
-		const int n = mTriangles.size();
+		const size_t n = mTriangles.size();
 		auto patch_i = 0;
 
 		for (auto i = 0u; i < n; i++)
@@ -397,6 +398,158 @@ private:
 		}
 	}
 
+	void getLambdas(const Triangle& tri, const Vector& hitpoint, double& lambda1, double& lambda2, double& lambda3) {
+		auto A1 = (tri.getP2() - hitpoint).Cross(tri.getP3() - hitpoint).Length() / 2.0;
+		auto A2 = (tri.getP1() - hitpoint).Cross(tri.getP3() - hitpoint).Length() / 2.0;
+		lambda1 = A1 / tri.getA();
+		lambda2 = A2 / tri.getA();
+		lambda3 = 1 - lambda1 - lambda2;
+	}
+
+	Color barycentricInterpolation(const Vector& p, const Triangle& t1, const Triangle& t2, const Triangle& t3)
+	{
+		const auto triangle = Triangle(t1.center(), t2.center(), t3.center(), Color(), Color());
+
+		auto l1 = 0.0;
+		auto l2 = 0.0;
+		auto l3 = 0.0;
+
+		getLambdas(triangle, p, l1, l2, l3);
+
+		return t1.getColor() * l1 + t2.getColor() * l2 + t3.getColor() * l3;
+	}
+
+	Color adjacentBarycentricInterpolation(const size_t triangleId, 
+											const size_t subTriangleId,
+											const Vector& hitpoint)
+	{
+		const auto& triangle = mTriangles[triangleId];
+		const auto& subTri = triangle.getSubTriangle(subTriangleId);
+
+		const auto& triB = (triangleId % 2) == 0 ? mTriangles[triangleId + 1] : mTriangles[triangleId - 1];
+
+		std::vector<Triangle> adjacent;
+
+		triangle.getAdjacentTriangles(subTri, adjacent);
+		triB.getAdjacentTriangles(subTri, adjacent);
+
+		auto col = Color(0, 0, 0);
+
+		if (adjacent.size() == 1)
+		{
+			const auto& t = adjacent.front();
+			auto d1 = (hitpoint - t.center()).Length();
+			auto d2 = (hitpoint - subTri.center()).Length();
+			auto total = d1 + d2;
+
+			auto f2 = 1 - d2 / total;
+
+			col = subTri.getColor() + (t.getColor() - subTri.getColor()) * f2;
+		}
+		else if (adjacent.size() == 2)
+		{
+			const auto& t1 = adjacent[0];
+			const auto& t2 = adjacent[1];
+
+			col = barycentricInterpolation(hitpoint, subTri, t1, t2);
+		}
+		else if (adjacent.size() == 3)
+		{
+			const auto& t1 = adjacent[0];
+			const auto& t2 = adjacent[1];
+			const auto& t3 = adjacent[2];
+
+			col += barycentricInterpolation(hitpoint, subTri, t1, t2);
+			col += barycentricInterpolation(hitpoint, subTri, t2, t3);
+			col += barycentricInterpolation(hitpoint, subTri, t1, t3);
+
+			col = col / 3.0;
+		}
+		else
+		{
+			assert(false && "invalid neighbour count");
+		}
+
+		return col * Over_M_PI;
+	}
+
+	Color neighbourCornerBarycentricInterpolation(const size_t triangleId,
+												  const size_t subTriangleId,
+												  const Vector& hitpoint)
+	{
+		const auto& triangle = mTriangles[triangleId];
+		const auto& subTri = triangle.getSubTriangle(subTriangleId);
+
+		const auto& triB = (triangleId % 2) == 0 ? mTriangles[triangleId + 1] : mTriangles[triangleId - 1];
+
+		std::vector<Triangle> adjacent;
+
+		for(const auto& t : triangle.getSubTriangles())
+		{
+			adjacent.push_back(t);
+		}
+
+		for (const auto& t : triB.getSubTriangles())
+		{
+			adjacent.push_back(t);
+		}
+
+		auto col = Color(0, 0, 0);
+
+		auto c1 = Color();
+		auto numC1 = 0u;
+
+		auto c2 = Color();
+		auto numC2 = 0u;
+
+		auto c3 = Color();
+		auto numC3 = 0u;
+
+		const auto epsilon = 0.00001f;
+		const auto epsilonVec = Vector(epsilon, epsilon, epsilon);
+
+		for(const auto& t : adjacent)
+		{
+			if(Vector::AreEqual(subTri.getP1(), t.getP1(), epsilonVec) ||
+			   Vector::AreEqual(subTri.getP1(), t.getP2(), epsilonVec) ||
+			   Vector::AreEqual(subTri.getP1(), t.getP3(), epsilonVec))
+			{
+				c1 += t.getColor();
+				numC1++;
+			}
+
+			if (Vector::AreEqual(subTri.getP2(), t.getP1(), epsilonVec) ||
+				Vector::AreEqual(subTri.getP2(), t.getP2(), epsilonVec) ||
+				Vector::AreEqual(subTri.getP2(), t.getP3(), epsilonVec))
+			{
+				c2 += t.getColor();
+				numC2++;
+			}
+
+			if (Vector::AreEqual(subTri.getP3(), t.getP1(), epsilonVec) ||
+				Vector::AreEqual(subTri.getP3(), t.getP2(), epsilonVec) ||
+				Vector::AreEqual(subTri.getP3(), t.getP3(), epsilonVec))
+			{
+				c3 += t.getColor();
+				numC3++;
+			}
+		}
+
+		c1 = c1 / numC1;
+		c2 = c2 / numC2;
+		c3 = c3 / numC3;
+
+		auto l1 = 0.0;
+		auto l2 = 0.0;
+		auto l3 = 0.0;
+
+		getLambdas(subTri, hitpoint, l1, l2, l3);
+
+		col = c1 * l1 + c2 * l2 + c3 * l3;
+
+		return col * Over_M_PI;
+	}
+
 	/******************************************************************
 	* Compute radiance from radiosity by shooting rays into the scene;
 	* Radiance directly proportional to radiosity for assumed diffuse
@@ -409,58 +562,24 @@ private:
 		const auto& tri = mTriangles[id];
 	
         /* Check for plane-ray intersection first */
-        const Vector hitpoint = ray.org + distance * ray.dir;
+        const auto hitpoint = ray.org + distance * ray.dir;
+
+		const auto maxDistance = 60.0;
 
 		auto idSub = 0u;
 		if (!tri.intersectsSub(ray, distance, idSub))
 			assert(false && "No intersection");
 
-		const auto& subTri = tri.getSubTriangle(idSub);
-
 		/* Bicubic interpolation for smooth image */
 		if (interpolation)
 		{
-			auto col = Color(0, 0, 0);
-			std::vector<Triangle> adjacent;
-
-			adjacent.push_back(subTri);
-
-			tri.getAdjacentTriangles(subTri, adjacent);
-
-			const auto& triB = (id % 2) == 0 ? mTriangles[id + 1] : mTriangles[id - 1];
-			triB.getAdjacentTriangles(subTri, adjacent);
-
-			auto distanceTotal = 0.0;
-			for (const auto& t : adjacent)
-			{
-				distanceTotal += (hitpoint - t.center()).Length();
-			}
-
-			for(const auto& t : adjacent)
-			{
-				auto factor = 1 - (hitpoint - t.center()).Length() / distanceTotal;
-
-				col += (t.getColor() - col) * factor;
-			}
-
-			return col;
-
-	
-			Triangle neighbours[4];
-			tri.getNeighbours(idSub, neighbours);
-            
-            auto A1 = (tri.getP2() - hitpoint).Cross(tri.getP3() - hitpoint).Length();
-            auto A2 = (tri.getP1() - hitpoint).Cross(tri.getP3() - hitpoint).Length();
-            auto lambda1 = A1 / tri.getA();
-            auto lambda2 = A2 / tri.getA();
-            auto lambda3 = 1 - lambda1 - lambda2;
-
-            return (lambda1 * neighbours[1].getColor() + lambda2 * neighbours[2].getColor() + lambda3 * neighbours[3].getColor()) * Over_M_PI;
+			//return adjacentBarycentricInterpolation(id, idSub, hitpoint);
+			return neighbourCornerBarycentricInterpolation(id, idSub, hitpoint);
 		}
-		else
-		{
-			return subTri.getColor() * Over_M_PI;
-		}
+
+		const auto& subTri = tri.getSubTriangle(idSub);
+
+		return subTri.getColor() * Over_M_PI;
 	}
 
 };

@@ -139,7 +139,7 @@ public:
 		*******************************************************************/
 		bool Intersect_Scene(const Ray &ray, double *t, int *id, Vector *normal)
 		{
-			const int n = mRectangles.size();
+			const size_t n = mRectangles.size();
 			*t = 1e20;
 			*id = -1;
 
@@ -168,7 +168,7 @@ public:
 		void Calculate_Form_Factors(const int a_div_num, const int b_div_num, const int mc_sample)
 		{
 			/* Total number of patches in scene */
-			const int n = mRectangles.size();
+			const size_t n = mRectangles.size();
 			for (int i = 0; i < n; i++)
 			{
 				mRectangles[i].init_patchs(a_div_num, b_div_num);
@@ -359,7 +359,7 @@ public:
 		*******************************************************************/
 		void Calculate_Radiosity(const int iteration)
 		{
-			const int n = mRectangles.size();
+			const size_t n = mRectangles.size();
 			int patch_i = 0;
 
 			for (int i = 0; i < n; i++)

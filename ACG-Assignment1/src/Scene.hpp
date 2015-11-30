@@ -7,18 +7,18 @@
 inline std::vector<Rectangle> getScene3() {
     static Rectangle rects[] = {
         /* Cornell Box walls */
-        Rectangle(Vector(0.0, 0.0, 0.0), Vector(100.0, 0.0, 0.0), Vector(0.0, 80.0, 0.0),
-                  Vector(), Color(0.75, 0.75, 0.75)), /* Back */
+        //Rectangle(Vector(0.0, 0.0, 0.0), Vector(100.0, 0.0, 0.0), Vector(0.0, 80.0, 0.0),
+        //          Vector(), Color(0.75, 0.75, 0.75)), /* Back */
         Rectangle(Vector(0.0, 0.0, 170.0), Vector(100.0, 0.0, 0.0), Vector(0.0, 0.0, -170.0),
                   Vector(), Color(0.75, 0.75, 0.75)), /* Bottom */
-        Rectangle(Vector(0.0, 80.0, 0.0), Vector(100.0, 0.0, 0.0), Vector(0.0, 0.0, 170.0),
-                  Vector(), Color(0.75, 0.75, 0.75)), /* Top */
-        Rectangle(Vector(0.0, 0.0, 170.0), Vector(0.0, 0.0, -170.0), Vector(0.0, 80.0, 0.0),
-                  Vector(), Color(0.75, 0.25, 0.25)), /* Left */
-        Rectangle(Vector(100.0, 0.0, 0.0), Vector(0.0, 0.0, 170.0), Vector(0.0, 80.0, 0.0),
-                  Vector(), Color(0.25, 0.25, 0.75)), /* Right */
-        Rectangle(Vector(100.0, 0.0, 170.0), Vector(-100.0, 0.0, 0.0), Vector(0.0, -80.0, 0.0),
-                  Vector(), Color(0, 1, 0)), /* Front (not visible) */
+        // Rectangle(Vector(0.0, 80.0, 0.0), Vector(100.0, 0.0, 0.0), Vector(0.0, 0.0, 170.0),
+        //          Vector(), Color(0.75, 0.75, 0.75)), /* Top */
+        //Rectangle(Vector(0.0, 0.0, 170.0), Vector(0.0, 0.0, -170.0), Vector(0.0, 80.0, 0.0),
+        //          Vector(), Color(0.75, 0.25, 0.25)), /* Left */
+        //Rectangle(Vector(100.0, 0.0, 0.0), Vector(0.0, 0.0, 170.0), Vector(0.0, 80.0, 0.0),
+        //          Vector(), Color(0.25, 0.25, 0.75)), /* Right */
+        //Rectangle(Vector(100.0, 0.0, 170.0), Vector(-100.0, 0.0, 0.0), Vector(0.0, -80.0, 0.0),
+        //          Vector(), Color(0, 1, 0)), /* Front (not visible) */
         
         /* Area light source on top */
         Rectangle(Vector(40.0, 79.99, 65.0), Vector(20.0, 0.0, 0.0), Vector(0.0, 0.0, 20.0),

@@ -118,7 +118,7 @@ public:
 		return false;
 	}
 
-	unsigned int getSubTriangleCount() const { return _subTriangles.size(); }
+	size_t getSubTriangleCount() const { return _subTriangles.size(); }
 
 	void split(Triangle(&out)[4]) const
 	{
@@ -160,7 +160,7 @@ public:
 
 	Vector point_inside() const
 	{
-		static std::default_random_engine rnd(static_cast<size_t>(time(nullptr)));
+		static std::default_random_engine rnd(static_cast<unsigned int>(time(nullptr)));
 		static std::uniform_real_distribution<double> rng(0.0, 1.0);
 
 		auto e0 = rng(rnd);
@@ -207,24 +207,60 @@ public:
 		}
 	}
 
-	const Triangle& getSubTriangle(int index) const
+	const Triangle& getSubTriangle(size_t index) const
 	{
 		return _subTriangles[index];
 	}
 
-	Triangle& getSubTriangle(int index) 
+	Triangle& getSubTriangle(size_t index)
 	{
 		return _subTriangles[index];
 	}
 
 	void setColor(const Color& color) { _color = color; }
 
+	void getNeighbourTriangles(const Triangle& tri, std::vector<Triangle>& out) const
+	{
+		const auto epsilon = 0.00001f;
+		const auto e = Vector(epsilon, epsilon, epsilon);
+
+		for (const auto& t : _subTriangles)
+		{
+			auto matches = 0;
+
+			if (Vector::AreEqual(tri.getP1(), t.getP1(), e) ||
+				Vector::AreEqual(tri.getP1(), t.getP2(), e) ||
+				Vector::AreEqual(tri.getP1(), t.getP3(), e))
+			{
+				matches++;
+			}
+
+			if (Vector::AreEqual(tri.getP2(), t.getP1(), e) ||
+				Vector::AreEqual(tri.getP2(), t.getP2(), e) ||
+				Vector::AreEqual(tri.getP2(), t.getP3(), e))
+			{
+				matches++;
+			}
+
+			if (Vector::AreEqual(tri.getP3(), t.getP1(), e) ||
+				Vector::AreEqual(tri.getP3(), t.getP2(), e) ||
+				Vector::AreEqual(tri.getP3(), t.getP3(), e))
+			{
+				matches++;
+			}
+
+			if (matches >= 1 && matches <= 2)
+			{
+				out.push_back(t);
+			}
+		}
+	}
+
 	void getAdjacentTriangles(const Triangle& tri, std::vector<Triangle>& out) const
 	{
 		const auto epsilon = 0.00001f;
 		const auto e = Vector(epsilon, epsilon, epsilon);
 
-		auto added = 0;
 		for(const auto& t : _subTriangles)
 		{
 			auto matches = 0;
@@ -243,22 +279,16 @@ public:
 				matches++;
 			}
 
-			if(matches >= 1)
+			if (Vector::AreEqual(tri.getP3(), t.getP1(), e) ||
+				Vector::AreEqual(tri.getP3(), t.getP2(), e) ||
+				Vector::AreEqual(tri.getP3(), t.getP3(), e))
 			{
-				if (Vector::AreEqual(tri.getP3(), t.getP1(), e) ||
-					Vector::AreEqual(tri.getP3(), t.getP2(), e) ||
-					Vector::AreEqual(tri.getP3(), t.getP3(), e))
-				{
-					matches++;
-				}
+				matches++;
+			}
 
-				if(matches == 2)
-				{
-					out.push_back(t);
-					added++;
-
-					if (added == 3) break;
-				}
+			if(matches == 2)
+			{
+				out.push_back(t);
 			}
 		}
 	}
@@ -269,7 +299,9 @@ public:
 	const Vector& getP1() const { return _p0; }
 	const Vector& getP2() const { return _p1; }
 	const Vector& getP3() const { return _p2; }
-    const double getA() const { return _a; }
+    double getA() const { return _a; }
+
+	const std::vector<Triangle>& getSubTriangles() const { return _subTriangles; }
 
 private:
 	Vector _p0, _p1, _p2, _normal;

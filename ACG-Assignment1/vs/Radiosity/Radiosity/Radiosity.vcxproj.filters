@@ -40,4 +40,9 @@
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt">
+      <Filter>src</Filter>
+    </Text>
+  </ItemGroup>
 </Project>
