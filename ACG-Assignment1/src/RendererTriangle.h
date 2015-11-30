@@ -7,17 +7,8 @@
 #include "Rectangle.hpp"
 #include "Triangle.hpp"
 
-#define drand48() (((double)rand())/((double)RAND_MAX))
-#include <algorithm>
-
 class RendererTriangles : public Renderer
 {
-	const double Over_M_PI = 1.0 / M_PI;
-
-	std::vector<double> mFormFactor;
-	size_t mPatchCount;
-	std::vector<Triangle> mTriangles;
-
 public:
 	RendererTriangles(unsigned int mWidth, unsigned int mHeight, unsigned int mSamples) : Renderer(mWidth, mHeight, mSamples)
 	{
@@ -30,8 +21,10 @@ public:
 			mTriangles.clear();
 
 		mTriangles.reserve(rects.size() * 2);
-		for (auto rect : rects)
+		for (auto it = rects.begin(); it != rects.end(); ++it)
 		{
+			const auto& rect = *it;
+
 			auto tl = rect.p0;
 			auto bl = rect.p0 + rect.edge_b;
 			auto tr = rect.p0 + rect.edge_a;
@@ -61,7 +54,7 @@ public:
 		}
 	}
 
-	virtual void Render(Image& img, Image& imgInterpolated)
+	virtual void Render(Image& img, Image& imgInterpolated, size_t divisions, size_t mcSamples, size_t iterations)
 	{
 		/* Set camera origin and viewing direction (negative z direction) */
 		Ray camera(Vector(50.0, 52.0, 295.6), Vector(0.0, -0.042612, -1.0).Normalized());
@@ -71,14 +64,12 @@ public:
 		auto cy = (cx.Cross(camera.dir)).Normalized() * 0.5135;
 
 		std::cout << "Calculating form factors" << std::endl;
-		const auto divisions = 3; // subtriangleCount = 4^divisions
-		const int MC_mSamples = 20;
 
-		Calculate_Form_Factors(divisions, MC_mSamples);
+		Calculate_Form_Factors(divisions, mcSamples);
 
 		/* Iterative solution of radiosity linear system */
 		std::cout << "Calculating radiosity" << std::endl;
-		const auto iterations = 40;
+
 		for (auto i = 0; i < iterations; i++)
 		{
 			std::cout << i << " ";
@@ -86,8 +77,8 @@ public:
 		}
 		std::cout << std::endl;
 
-		std::default_random_engine engine(static_cast<unsigned int>(time(nullptr)));
-		std::uniform_real_distribution<double> rng(0.0, 2.0);
+		//std::default_random_engine engine(static_cast<unsigned int>(time(nullptr)));
+		//std::uniform_real_distribution<double> rng(0.0, 2.0);
 
 		/* Loop over image rows */
 		for (auto y = 0u; y < mHeight; y++)
@@ -112,8 +103,11 @@ public:
 						/* Computes radiance at subpixel using multiple mSamples */
 						for (auto s = 0u; s < mSamples; s++)
 						{
-							const double r1 = rng(engine);
-							const double r2 = rng(engine);
+							//const double r1 = rng(engine);
+							//const double r2 = rng(engine);
+
+							const auto r1 = drand48() * 2.0;
+							const auto r2 = drand48() * 2.0;
 
 							/* Transform uniform into non-uniform filter mSamples */
 							double dx;
@@ -167,6 +161,10 @@ public:
 	}
 
 private:
+	std::vector<double> mFormFactor;
+	size_t mPatchCount;
+	std::vector<Triangle> mTriangles;
+
 	/******************************************************************
 	* Check for closest intersection of a ray with the scene;
 	* Returns true if intersection is found, as well as ray parameter
@@ -203,7 +201,7 @@ private:
 	* Computation accelerated by exploiting symmetries of form factor
 	* estimation;
 	*******************************************************************/
-	void Calculate_Form_Factors(const int divisions, const int mc_sample)
+	void Calculate_Form_Factors(const size_t divisions, const size_t mc_sample)
 	{
 		/* Total number of patches in scene */
 		const auto n = mTriangles.size();
@@ -285,8 +283,12 @@ private:
 
 							for (auto samples = 0; samples < mc_sample; samples++)
 							{
-								const auto xi = mTriangles[i].getSubTriangle(iSub).center();
-								const auto xj = mTriangles[j].getSubTriangle(jSub).center();
+								// produced better output than random sampling
+								//const auto xi = mTriangles[i].getSubTriangle(iSub).center();
+								//const auto xj = mTriangles[j].getSubTriangle(jSub).center();
+
+								const auto xi = mTriangles[i].getSubTriangle(iSub).point_inside();
+								const auto xj = mTriangles[j].getSubTriangle(jSub).point_inside();
 
 								/* Check for visibility between sample points */
 								const auto ij = (xj - xi).Normalized();
@@ -484,13 +486,19 @@ private:
 
 		std::vector<Triangle> adjacent;
 
-		for(const auto& t : triangle.getSubTriangles())
+		for (auto it = triangle.getSubTriangles().begin();
+			 it != triangle.getSubTriangles().end();
+		     ++it)
 		{
+			const auto& t = *it;
 			adjacent.push_back(t);
 		}
 
-		for (const auto& t : triB.getSubTriangles())
+		for (auto it = triB.getSubTriangles().begin();
+			 it != triB.getSubTriangles().end();
+			 ++it)
 		{
+			const auto& t = *it;
 			adjacent.push_back(t);
 		}
 
@@ -508,8 +516,11 @@ private:
 		const auto epsilon = 0.00001f;
 		const auto epsilonVec = Vector(epsilon, epsilon, epsilon);
 
-		for(const auto& t : adjacent)
+		for (auto it = adjacent.begin();
+			it != adjacent.end();
+			++it)
 		{
+			const auto& t = *it;
 			if(Vector::AreEqual(subTri.getP1(), t.getP1(), epsilonVec) ||
 			   Vector::AreEqual(subTri.getP1(), t.getP2(), epsilonVec) ||
 			   Vector::AreEqual(subTri.getP1(), t.getP3(), epsilonVec))

@@ -2,6 +2,7 @@
 #define Renderer_H_included
 
 #include "Image.hpp"
+#include "Rectangle.hpp"
 
 class Renderer
 {
@@ -12,6 +13,10 @@ protected:
 	Color mClearColor;
 
 public:
+	virtual ~Renderer()
+	{
+	}
+
 	Renderer(unsigned int width, unsigned int height, unsigned int samples) :
 		mWidth(width),
 		mHeight(height),
@@ -22,7 +27,7 @@ public:
 
 	virtual void buildScene(const std::vector<Rectangle>& rects) = 0;
 
-	virtual void Render(Image& normal, Image& smoothed) = 0;
+	virtual void Render(Image& normal, Image& smoothed, size_t divisions, size_t mcSamples, size_t iterations) = 0;
 };
 
 #endif

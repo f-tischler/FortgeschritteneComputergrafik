@@ -26,24 +26,30 @@
 *******************************************************************/
 
 #define _USE_MATH_DEFINES
+#define _CRT_SECURE_NO_WARNINGS
+
+#ifdef _WIN32
+#define drand48() (((double)rand())/((double)RAND_MAX))
+#endif
+
 #include <cmath>
+
+const double Over_M_PI = 1.0 / M_PI;
+
 #include <iostream>
-
 #include "Image.hpp"
-#include "Triangle.hpp"
-#include "Rectangle.hpp"
-
-
-#include "RendererRectangles.h"
 #include "RendererTriangle.h"
+#include "RendererRectangles.h"
 #include "Scene.hpp"
-
 
 int main(int argc, char **argv) 
 {
-	int width = 320;
-	int height = 240;
-	int samples = 1;
+	const auto width = 320;
+	const auto height = 240;
+	const auto samples = 4;
+	const auto iterations = 40u;
+	const auto divisions = 4u;
+	const auto mcSamples = 10u;
 
 	//RendererRectangles renderer(width, height, samples);
 	RendererTriangles renderer(width, height, samples);
@@ -52,7 +58,7 @@ int main(int argc, char **argv)
 	Image img(width, height);
 	Image img_interpolated(width, height);
 
-	renderer.Render(img, img_interpolated);
+	renderer.Render(img, img_interpolated, divisions, mcSamples, iterations);
 
 	img.Save("image_patches.ppm");
 	img_interpolated.Save("image_smooth.ppm");

@@ -55,13 +55,8 @@ public:
 	void Save(const std::string &filename)
 	{
 		/* Save image in PPM format */
-		FILE *f;
-#ifndef __APPLE__
-		fopen_s(&f, filename.c_str(), "wb");
-#endif
-#ifdef __APPLE__
-        f = fopen(filename.c_str(), "wb");
-#endif
+		FILE *f = fopen(filename.c_str(), "wb");
+	
 		fprintf(f, "P3\n%d %d\n%d\n", width, height, 255);
 		for (int i = 0; i < width * height; i++)
 			fprintf(f, "%d %d %d ", toInteger(pixels[i].x),

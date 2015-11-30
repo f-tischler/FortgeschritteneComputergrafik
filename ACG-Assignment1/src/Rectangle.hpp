@@ -1,8 +1,8 @@
 #ifndef Rectangle_H_included
 #define Rectangle_H_included
 
-#include "Math.h"
 #include "Vector.hpp"
+#include "Ray.hpp"
 
 /*------------------------------------------------------------------
 | Basic geometric element of scene description;
@@ -17,7 +17,7 @@ struct Rectangle
 	Vector normal;
 
 	std::vector<Color> patch;
-	int a_num, b_num;       /* Number of patches/subdivision of edges */
+	size_t a_num, b_num;       /* Number of patches/subdivision of edges */
 	double a_len, b_len;    /* Edge lengths */
 
 	Rectangle(const Vector p0_, const Vector &a_, const Vector &b_,
@@ -30,7 +30,7 @@ struct Rectangle
 		b_len = edge_b.Length();
 	}
 
-	Color sample_patch(int ia, int ib) const
+	Color sample_patch(size_t ia, size_t ib) const
 	{
 		if (ia < 0) ia = 0;
 		if (ia >= a_num) ia = a_num - 1;
@@ -39,7 +39,7 @@ struct Rectangle
 		return patch[ia * b_num + ib];
 	}
 
-	void init_patchs(const int a_num_, const int b_num_)
+	void init_patchs(const size_t a_num_, const size_t b_num_)
 	{
 		a_num = a_num_;
 		b_num = b_num_;
@@ -48,7 +48,7 @@ struct Rectangle
 	}
 
 	/* Rectangle-ray intersection */
-	const double intersect(const Ray &ray)
+	double intersect(const Ray &ray) const
 	{
 		/* Check for plane-ray intersection first */
 		const double t = (p0 - ray.org).Dot(normal) / ray.dir.Dot(normal);

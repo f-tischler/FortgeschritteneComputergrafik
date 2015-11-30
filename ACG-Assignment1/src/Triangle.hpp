@@ -6,7 +6,6 @@
 
 #include <cassert>
 #include <vector>
-#include <random>
 
 class Triangle
 {
@@ -160,11 +159,14 @@ public:
 
 	Vector point_inside() const
 	{
-		static std::default_random_engine rnd(static_cast<unsigned int>(time(nullptr)));
-		static std::uniform_real_distribution<double> rng(0.0, 1.0);
+		//static std::default_random_engine rnd(static_cast<unsigned int>(time(nullptr)));
+		//static std::uniform_real_distribution<double> rng(0.0, 1.0);
 
-		auto e0 = rng(rnd);
-		auto e1 = rng(rnd);
+		//auto e0 = rng(rnd);
+		//auto e1 = rng(rnd);
+
+		auto e0 = drand48();
+		auto e1 = drand48();
 
 		auto rootE0 = std::sqrt(e0);
 
@@ -182,7 +184,7 @@ public:
 		return (_p0 + _p1 + _p2) / 3.0;
 	}
 
-	void init_patchs(const int divisions)
+	void init_patchs(const size_t divisions)
 	{
 		_subTriangles.clear();
 		splitRec(divisions, *this);
@@ -193,13 +195,15 @@ public:
 		return _neighbors;
 	}
 
-	void splitRec(int divisions, const Triangle& tri)
+	void splitRec(size_t divisions, const Triangle& tri)
 	{
 		Triangle tmp[4];
 		tri.split(tmp);
 
-		for (const auto& t : tmp)
+		for (auto i = 0; i < 4; i++)
 		{
+			const auto& t = tmp[i];
+
 			if (divisions == 1)
 				_subTriangles.push_back(t);
 			else
@@ -219,50 +223,14 @@ public:
 
 	void setColor(const Color& color) { _color = color; }
 
-	void getNeighbourTriangles(const Triangle& tri, std::vector<Triangle>& out) const
-	{
-		const auto epsilon = 0.00001f;
-		const auto e = Vector(epsilon, epsilon, epsilon);
-
-		for (const auto& t : _subTriangles)
-		{
-			auto matches = 0;
-
-			if (Vector::AreEqual(tri.getP1(), t.getP1(), e) ||
-				Vector::AreEqual(tri.getP1(), t.getP2(), e) ||
-				Vector::AreEqual(tri.getP1(), t.getP3(), e))
-			{
-				matches++;
-			}
-
-			if (Vector::AreEqual(tri.getP2(), t.getP1(), e) ||
-				Vector::AreEqual(tri.getP2(), t.getP2(), e) ||
-				Vector::AreEqual(tri.getP2(), t.getP3(), e))
-			{
-				matches++;
-			}
-
-			if (Vector::AreEqual(tri.getP3(), t.getP1(), e) ||
-				Vector::AreEqual(tri.getP3(), t.getP2(), e) ||
-				Vector::AreEqual(tri.getP3(), t.getP3(), e))
-			{
-				matches++;
-			}
-
-			if (matches >= 1 && matches <= 2)
-			{
-				out.push_back(t);
-			}
-		}
-	}
-
 	void getAdjacentTriangles(const Triangle& tri, std::vector<Triangle>& out) const
 	{
 		const auto epsilon = 0.00001f;
 		const auto e = Vector(epsilon, epsilon, epsilon);
 
-		for(const auto& t : _subTriangles)
+		for (auto it = _subTriangles.begin(); it != _subTriangles.end(); ++it)
 		{
+			const auto& t = *it;
 			auto matches = 0;
 			
 			if(Vector::AreEqual(tri.getP1(), t.getP1(), e) ||

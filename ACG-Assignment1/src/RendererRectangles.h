@@ -2,18 +2,15 @@
 #define RendererRectangles_H_included
 
 #include <vector>
+#include <string.h>
 
 #include "Renderer.hpp"
 #include "Rectangle.hpp"
 
-#define drand48() (((double)rand())/((double)RAND_MAX))
-
 class RendererRectangles : public Renderer
 {
-	const double Over_M_PI = 1.0 / M_PI;
-
 	std::vector<double> mFormFactor;
-	unsigned int mPatchCount;
+	size_t mPatchCount;
 	std::vector<Rectangle> mRectangles;
 	
 
@@ -28,7 +25,7 @@ public:
 		mRectangles = rects;
 	}
 
-	virtual void Render(Image& img, Image& imgInterpolated)
+	virtual void Render(Image& img, Image& imgInterpolated, size_t divisions, size_t mcSamples, size_t iterations)
 	{
 		/* Set camera origin and viewing direction (negative z direction) */
 		Ray camera(Vector(50.0, 52.0, 295.6), Vector(0.0, -0.042612, -1.0).Normalized());
@@ -38,16 +35,15 @@ public:
 		Vector cy = (cx.Cross(camera.dir)).Normalized() * 0.5135;
 
 		std::cout << "Calculating form factors" << std::endl;
-		int patches_a = 1;
-		int patches_b = 8;
-		int MC_mSamples = 3;
 
-		Calculate_Form_Factors(patches_a, patches_b, MC_mSamples);
+		auto patches_a = divisions;
+		auto patches_b = divisions;
+
+		Calculate_Form_Factors(patches_a, patches_b, mcSamples);
 
 		/* Iterative solution of radiosity linear system */
 		std::cout << "Calculating radiosity" << std::endl;
-		int iterations = 1;
-		for (int i = 0; i < iterations; i++)
+		for (auto i = 0; i < iterations; i++)
 		{
 			std::cout << i << " ";
 			Calculate_Radiosity(i);
@@ -165,11 +161,11 @@ public:
 		* Computation accelerated by exploiting symmetries of form factor
 		* estimation;
 		*******************************************************************/
-		void Calculate_Form_Factors(const int a_div_num, const int b_div_num, const int mc_sample)
+		void Calculate_Form_Factors(const size_t a_div_num, const size_t b_div_num, const size_t mc_sample)
 		{
 			/* Total number of patches in scene */
-			const size_t n = mRectangles.size();
-			for (int i = 0; i < n; i++)
+			const auto n = mRectangles.size();
+			for (auto i = 0; i < n; i++)
 			{
 				mRectangles[i].init_patchs(a_div_num, b_div_num);
 				mPatchCount += mRectangles[i].a_num * mRectangles[i].b_num;
@@ -177,7 +173,7 @@ public:
 
 			std::cout << "Number of rectangles: " << n << std::endl;
 			std::cout << "Number of patches: " << mPatchCount << std::endl;
-			int mFormFactor_num = mPatchCount * mPatchCount;
+			size_t mFormFactor_num = mPatchCount * mPatchCount;
 			std::cout << "Number of form factors: " << mFormFactor_num << std::endl;
 
 			/* 1D-array to hold form factor pairs */
@@ -191,7 +187,7 @@ public:
 			/* Precompute patch areas, assuming same size for each rectangle */
 			for (int i = 0; i < n; i++)
 			{
-				int patch_i = 0;
+				size_t patch_i = 0;
 				for (int k = 0; k < i; k++)
 					patch_i += mRectangles[k].a_num * mRectangles[k].b_num;
 
@@ -200,14 +196,14 @@ public:
 					for (int ib = 0; ib < mRectangles[i].b_num; ib++)
 					{
 						patch_area[patch_i + ia* mRectangles[i].b_num + ib] =
-							((mRectangles[i].edge_a / mRectangles[i].a_num).
-							Cross((mRectangles[i].edge_b / mRectangles[i].b_num))).Length();
+							((mRectangles[i].edge_a / (double)mRectangles[i].a_num).
+							Cross((mRectangles[i].edge_b / (double)mRectangles[i].b_num))).Length();
 					}
 				}
 			}
 
 			/* Offsets for indexing of patches in 1D-array */
-			int *offset = new int[n];
+			auto offset = new size_t[n];
 
 			for (int i = 0; i < n; i++)
 			{
@@ -219,7 +215,7 @@ public:
 			/* Loop over all rectangles in scene */
 			for (int i = 0; i < n; i++)
 			{
-				int patch_i = offset[i];
+				auto patch_i = offset[i];
 
 				std::cout << i << " ";
 
@@ -251,7 +247,7 @@ public:
 										double F = 0;
 
 										/* Monte Carlo integration of form factor double integral */
-										const int Ni = mc_sample, Nj = mc_sample;
+										const auto Ni = mc_sample, Nj = mc_sample;
 
 										/* Uniform PDF for Monte Carlo (1/Ai)x(1/Aj) */
 										const double pdf =
