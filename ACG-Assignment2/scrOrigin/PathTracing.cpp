@@ -20,12 +20,24 @@
 *******************************************************************/
 
 /* Standard includes */
+
+#if defined(_WIN32)
+#define _CRT_SECURE_NO_WARNINGS
+#define _USE_MATH_DEFINES
+
+#define drand48() (((double)rand())/((double)RAND_MAX))
+#endif
+
+
+
 #include <cmath>   
 #include <cstdlib> 
 #include <iostream>
 #include <fstream>
 
 using namespace std;
+
+
 
 
 /*------------------------------------------------------------------

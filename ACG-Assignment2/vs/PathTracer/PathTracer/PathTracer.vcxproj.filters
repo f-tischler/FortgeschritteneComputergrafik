@@ -8,6 +8,9 @@
     <Filter Include="scrOrigin">
       <UniqueIdentifier>{86aa82e9-1220-44aa-9a5e-5bbba19302e2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\scene">
+      <UniqueIdentifier>{4ec90f33-617d-415c-9f32-c20e8dedaa82}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\main.cpp">
@@ -30,17 +33,32 @@
     <ClInclude Include="..\..\..\src\Renderer.hpp">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\Triangle.hpp">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\Consts.hpp">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\Sphere.hpp">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\Scene.hpp">
-      <Filter>src</Filter>
+      <Filter>src\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\Sphere.hpp">
+      <Filter>src\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\TriangleMesh.hpp">
+      <Filter>src\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\Triangle.hpp">
+      <Filter>src\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\TinyObjLoader.hpp">
+      <Filter>src\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\Geometry.hpp">
+      <Filter>src\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\BoundingBox.hpp">
+      <Filter>src\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ModelLoader.hpp">
+      <Filter>src\scene</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

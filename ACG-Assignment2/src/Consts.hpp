@@ -7,6 +7,11 @@
 | (DIFFuse, SPECular, REFRactive)
 ------------------------------------------------------------------*/
 enum Refl_t { DIFF, SPEC, REFR };
+enum eGeometryType
+{
+	eGeometryType_Sphere,
+	eGeometryType_TriangleMesh
+};
 
 
 #endif
