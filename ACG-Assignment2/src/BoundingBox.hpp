@@ -2,6 +2,9 @@
 #define BoundingBox_H_included
 
 #include "Ray.hpp"
+#ifdef __APPLE__
+#include <float.h>
+#endif
 
 template<class vec3>
 class BoundingBox

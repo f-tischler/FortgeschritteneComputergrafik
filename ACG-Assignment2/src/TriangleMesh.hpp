@@ -3,12 +3,11 @@
 
 #include <vector>
 #include <algorithm>
-#include "glm/glm.hpp"
-#include "glm/gtx/transform.hpp"
 
 #include "Consts.hpp"
 #include "Geometry.hpp"
 #include "BoundingBox.hpp"
+#include "Matrix.hpp"
 
 typedef Vector Vertex;
 
@@ -81,37 +80,83 @@ public:
 		
 		return distance;
 	}
+    
+    double toRad(double angleDeg) {
+        return M_PI/180 * angleDeg;
+    }
 
-
-	void rotateX(float angleDeg)
+	void rotateX(double angleDeg)
 	{
-		transformPoints(glm::rotate(glm::mat4x4(1), glm::radians(angleDeg), glm::vec3(1, 0, 0)));
+        double angleRad = toRad(angleDeg);
+        
+        double tmp[16] =
+        {
+            1.0,           0.0,            0.0, 0.0,
+            0.0, cos(angleRad), -sin(angleRad), 0.0,
+            0.0, sin(angleRad),  cos(angleRad), 0.0,
+            0.0,           0.0,            0.0, 1.0
+        };
+        
+		transformPoints(Matrix(tmp));
 		mChanged = true;
 	}
 
 	void rotateY(float angleDeg)
 	{
-		transformPoints(glm::rotate(glm::mat4x4(1), glm::radians(angleDeg), glm::vec3(0, 1, 0)));
+        double angleRad = toRad(angleDeg);
+        
+        double tmp[16] =
+        {
+            cos(angleRad) , 0.0, sin(angleRad), 0.0,
+            0.0           , 1.0,           0.0, 0.0,
+            -sin(angleRad), 0.0, cos(angleRad), 0.0,
+            0.0           , 0.0,           0.0, 1.0
+        };
+        
+		transformPoints(Matrix(tmp));
 	}
 
 	void rotateZ(float angleDeg)
 	{
-
-		transformPoints(glm::rotate(glm::mat4x4(1), glm::radians(angleDeg), glm::vec3(0, 0, 1)));
+        double angleRad = toRad(angleDeg);
+        
+        double tmp[16] =
+        {
+            cos(angleRad), -sin(angleRad), 0.0, 0.0,
+            sin(angleRad), cos(angleRad) , 0.0, 0.0,
+            0.0          , 0.0           , 1.0, 0.0,
+            0.0          , 0.0           , 0.0, 1.0
+        };
+        
+		transformPoints(Matrix(tmp));
 	}
 
-	void translate(float x, float y = 0.0f, float z = 0.0f)
+	void translate(double x, double y, double z)
 	{
-		transformPoints(glm::translate(glm::mat4x4(1), glm::vec3(x, y, z)));
+        double tmp[16] =
+        {
+            1.0, 0.0, 0.0, x  ,
+            0.0, 1.0, 0.0, y  ,
+            0.0, 0.0, 1.0, z  ,
+            0.0, 0.0, 0.0, 1.0
+        };
+		transformPoints(Matrix(tmp));
 	}
 
-	template<class T, class T1, class T2>
-	void scale(T x, T1 y, T2 z)
+	void scale(double x, double y, double z)
 	{
-		transformPoints(glm::scale(glm::mat4x4(1), glm::vec3(x, y, z)));
+        double tmp[16] =
+        {
+            x  , 0.0, 0.0, 0.0,
+            0.0, y  , 0.0, 0.0,
+            0.0, 0.0,   z, 0.0,
+            0.0, 0.0, 0.0, 1.0
+        };
+        
+		transformPoints(Matrix(tmp));
 	}
 
-	void scaleToWidth(float width)
+	void scaleToWidth(double width)
 	{
 		if (mChanged)
 		{
@@ -182,14 +227,11 @@ public:
 	}
 
 private:
-	void transformPoints(const glm::mat4x4& mat)
+	void transformPoints(Matrix m)
 	{
 		for (auto& v : mVertices)
 		{
-			auto t = mat * glm::vec4(v.x, v.y, v.z, 1.0f);
-			v.x = t.x;
-			v.y = t.y;
-			v.z = t.z;
+			v = m * v;
 		}
 
 		mChanged = true;
