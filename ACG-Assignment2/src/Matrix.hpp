@@ -45,7 +45,7 @@ public:
         
         return Vector(m[0] * tmp[0] + m[1] * tmp[1] + m[2] * tmp[2] + m[3] * tmp[3],
                       m[4] * tmp[0] + m[5] * tmp[1] + m[6] * tmp[2] + m[7] * tmp[3],
-                      m[8] * tmp[0] + m[9] * tmp[1] + m[9] * tmp[2] + m[10] * tmp[3]);
+                      m[8] * tmp[0] + m[9] * tmp[1] + m[10] * tmp[2] + m[11] * tmp[3]);
     }
     
     Matrix operator*(Matrix _m) const
