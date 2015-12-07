@@ -65,7 +65,7 @@ inline SPScene getScene()
 //	scene->addGeometry(SPGeometry(new Sphere(1.5, Vector(50, 81.6 - 16.5, 81.6), Vector(4, 4, 4) * 100, Vector(), DIFF))); /* Light */
 
 	auto cubeMesh = loadObj("cube.obj", Vector(), Vector(), SPEC)[0];
-	auto rhino = loadObj("rhino.obj", Vector(), Vector(), SPEC)[0];
+	auto rhino = loadObj("cube.obj", Vector(), Vector(), SPEC)[0];
 
 	auto cube1 = cubeMesh;
 	auto cube2 = rhino;
@@ -125,6 +125,27 @@ inline SPScene getScene()
 	return scene;
 }
 
+inline SPScene getScene2()
+{
+    static SPScene scene = SPScene(new Scene());
+    
+    scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(1e5 + 1, 40.8, 81.6), Vector(), Vector(.75, .25, .25), DIFF)));	/* Left wall */
+    scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(-1e5 + 99, 40.8, 81.6), Vector(), Vector(.25, .25, .75), DIFF)));	/* Right wall */
+    
+    scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, 40.8, 1e5), Vector(), Vector(.75, .75, .75), DIFF)));			/* Back wall */
+    scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, 40.8, -1e5 + 170), Vector(), Vector(), DIFF)));				/* Front wall */
+    
+    scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, 1e5, 81.6), Vector(), Vector(.75, .75, .75), DIFF)));			/* Floor */
+    scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, -1e5 + 81.6, 81.6), Vector(), Vector(.75, .75, .75), DIFF)));  /* Ceiling */
+    
+    scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(27, 16.5, 47), Vector(), Vector(1, 1, 1)*.999, SPEC)));			/* Mirror sphere */
+    scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(73, 16.5, 47), Vector(), Vector(1, 1, 1)*.999, REFR)));			/* Glas sphere */
+    
+    scene->addGeometry(SPGeometry(new Sphere(1.5, Vector(50, 81.6 - 16.5, 81.6), Vector(4, 4, 4) * 100, Vector(), DIFF))); /* Light */
+    
+    return scene;
+}
+
 
 /******************************************************************
 * Main routine: Computation of path tracing image (2x2 subpixels)
@@ -137,9 +158,9 @@ inline SPScene getScene()
 
 int main(int argc, char *argv[]) 
 {
-    int width = 1024;
-    int height = 768;
-	int samples = 1;
+    int width = 320;
+    int height = 240;
+	int samples = 8;
 
 
 	auto start = std::chrono::system_clock::now();
