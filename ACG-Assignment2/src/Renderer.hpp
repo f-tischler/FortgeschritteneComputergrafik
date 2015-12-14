@@ -119,7 +119,6 @@ public:
 
 							dir = dir.Normalized();
 
-
 							accumulated_radiance = accumulated_radiance + Radiance(Ray(start, dir), 0, 1) / mSamples;
 						}
 
@@ -301,8 +300,17 @@ private:
 		{
 			/* Return light emission mirror reflection (via recursive call using perfect
 			reflection vector) */
+            Vector L = ray.dir;
+            Vector N = mIntersectionInfo.normal;
+            Vector L_prime = L - mIntersectionInfo.normal * 2 * (N.Dot(L));
+            Vector u = L.Cross(L_prime);
+            Vector v = u.Cross(N);
+            L_prime += u * CDF(10, drand48());
+            L_prime += v * CDF(10, drand48());
+            L_prime += N * CDF(10, drand48());
+            L_prime = L_prime.Normalized();
 			return obj.emission +
-				col.MultComponents(Radiance(Ray(mIntersectionInfo.hitpoint, ray.dir - mIntersectionInfo.normal * 2 * mIntersectionInfo.normal.Dot(ray.dir)),
+				col.MultComponents(Radiance(Ray(mIntersectionInfo.hitpoint, L_prime),
 				depth, 1));
 		}
 
@@ -364,6 +372,16 @@ private:
 		else
 			return obj.emission + col.MultComponents(Radiance(Ray(mIntersectionInfo.hitpoint, tdir), depth, 1) * TP);
 	}
+    
+    // Cumulative distribution function
+    // c can be used as glossiness/translucency factor. c in interval (0,infinity]
+    // small c means really glossy. large c means really mirror like
+    // x should be a random number in interval [0, 1]
+    double CDF(double c, double x) {
+        double beta = atan(-c);
+        double alpha = atan(c) - beta;
+        return (1.0/c) * tan(alpha * x + beta);
+    }
 };
 
 #endif

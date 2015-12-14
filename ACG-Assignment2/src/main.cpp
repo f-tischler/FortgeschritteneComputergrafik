@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 {
     int width = 320;
     int height = 240;
-	int samples = 8;
+	int samples = 16;
 
 
 	auto start = std::chrono::system_clock::now();
