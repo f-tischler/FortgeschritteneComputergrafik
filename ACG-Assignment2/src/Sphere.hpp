@@ -15,8 +15,8 @@ public:
 
 public:
 
-	Sphere(double radius_, Vector position_, Vector emission_, Vector color_, Refl_t refl_) : 
-		Geometry(emission_, color_, refl_),
+	Sphere(double radius_, Vector position_, Vector emission_, Vector color_, Refl_t refl_, double c = 0.0) :
+		Geometry(emission_, color_, refl_, c),
 		radius(radius_), 
 		position(position_)
 	{

@@ -298,24 +298,29 @@ private:
 		}
 		else if (obj.refl == SPEC)
 		{
-			/* Return light emission mirror reflection (via recursive call using perfect
-			reflection vector) */
+            return col.MultComponents(Radiance(Ray(mIntersectionInfo.hitpoint, ray.dir - mIntersectionInfo.normal * 2 * mIntersectionInfo.normal.Dot(ray.dir)),depth, 1));
+        }
+        else if (obj.refl == GLOS)
+        {
+            /* Return light emission mirror reflection (via recursive call using perfect
+             reflection vector) */
             Vector L = ray.dir;
             Vector N = mIntersectionInfo.normal;
-            Vector L_prime = L - mIntersectionInfo.normal * 2 * (N.Dot(L));
-            Vector u = L.Cross(L_prime);
-            Vector v = u.Cross(N);
-            L_prime += u * CDF(10, drand48());
-            L_prime += v * CDF(10, drand48());
-            L_prime += N * CDF(10, drand48());
-            L_prime = L_prime.Normalized();
-			return obj.emission +
-				col.MultComponents(Radiance(Ray(mIntersectionInfo.hitpoint, L_prime),
-				depth, 1));
-		}
+            Vector L_prime = L - N * 2 * (N.Dot(L));
+            
+            varyVector(L_prime, obj.getConstant());
+            
+            return obj.emission + col.MultComponents(Radiance(Ray(mIntersectionInfo.hitpoint, L_prime), depth, 1));
+        }
 
 		/* Otherwise object transparent, i.e. assumed dielectric glass material */
-		Ray reflRay(mIntersectionInfo.hitpoint, ray.dir - mIntersectionInfo.normal * 2 * mIntersectionInfo.normal.Dot(ray.dir));  /* Prefect reflection */
+        Vector L = ray.dir;
+        Vector N = mIntersectionInfo.normal;
+        Vector L_prime = L - N * 2 * (N.Dot(L));
+
+        if(obj.refl == TRAN) varyVector(L_prime, obj.getConstant());
+        
+		Ray reflRay(mIntersectionInfo.hitpoint, L_prime);  /* Prefect reflection */
 		bool into = mIntersectionInfo.normal.Dot(nl) > 0;       /* Bool for checking if ray from outside going in */
 		double nc = 1;                        /* Index of refraction of air (approximately) */
 		double nt = 1.5;                      /* Index of refraction of glass (approximately) */
@@ -374,13 +379,43 @@ private:
 	}
     
     // Cumulative distribution function
-    // c can be used as glossiness/translucency factor. c in interval (0,infinity]
-    // small c means really glossy. large c means really mirror like
+    // c can be used as glossiness/translucency factor. c in interval (0, infinity)
+    // small c (e.g. 0.01) means mirror like, large c (e.g. 0.9) means really glossy
     // x should be a random number in interval [0, 1]
-    double CDF(double c, double x) {
-        double beta = atan(-c);
-        double alpha = atan(c) - beta;
-        return (1.0/c) * tan(alpha * x + beta);
+    double CDF(double x, double c) {
+        c = c <= 0 ? 1.0e-6 : c;
+        double beta = atan(-1.0/c);
+        double alpha = atan(1.0/c) - beta;
+        return c * tan(alpha * x + beta);
+    }
+    
+    // varyVector varies vector
+    // if c is small (e.g. 0.01) vector will be varied only a little bit in its general direction
+    // if c is large (e.g. 0.9) vector will be varied a lot and does not necessarily point in its previous general direction
+    void varyVector(Vector &vector, double c) {
+        /* Compute random reflection vector on hemisphere */
+        double r1 = 2.0 * M_PI * drand48();
+        double r2 = drand48();
+        double r2s = sqrt(r2);
+        
+        /* Set up local orthogonal coordinate system u,v,w on surface */
+        Vector w = vector;
+        Vector u;
+        
+        if (fabs(w.x) > .1)
+            u = Vector(0.0, 1.0, 0.0);
+        else
+            u = (Vector(1.0, 0.0, 0.0).Cross(w)).Normalized();
+        
+        Vector v = w.Cross(u);
+        
+        /* Random reflection vector d */
+        Vector d = (u * cos(r1) * r2s +
+                    v * sin(r1) * r2s +
+                    w * sqrt(1 - r2)).Normalized();
+        
+        vector += CDF(drand48(), c) * d;
+        vector = vector.Normalized();
     }
 };
 
