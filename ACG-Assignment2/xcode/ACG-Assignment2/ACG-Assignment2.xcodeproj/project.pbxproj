@@ -43,7 +43,7 @@
 		702769321C1499EE00CD881B /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = main.cpp; path = ../../../src/main.cpp; sourceTree = "<group>"; };
 		702769331C1499EE00CD881B /* ModelLoader.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = ModelLoader.hpp; path = ../../../src/ModelLoader.hpp; sourceTree = "<group>"; };
 		702769341C1499EE00CD881B /* Ray.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Ray.hpp; path = ../../../src/Ray.hpp; sourceTree = "<group>"; };
-		702769351C1499EE00CD881B /* Renderer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Renderer.hpp; path = ../../../src/Renderer.hpp; sourceTree = "<group>"; };
+		702769351C1499EE00CD881B /* Renderer.hpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.h; name = Renderer.hpp; path = ../../../src/Renderer.hpp; sourceTree = "<group>"; };
 		702769361C1499EE00CD881B /* Scene.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Scene.hpp; path = ../../../src/Scene.hpp; sourceTree = "<group>"; };
 		702769371C1499EE00CD881B /* Sphere.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Sphere.hpp; path = ../../../src/Sphere.hpp; sourceTree = "<group>"; };
 		702769381C1499EE00CD881B /* TinyObjLoader.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = TinyObjLoader.hpp; path = ../../../src/TinyObjLoader.hpp; sourceTree = "<group>"; };
@@ -281,6 +281,7 @@
 				7027692C1C1499CC00CD881B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

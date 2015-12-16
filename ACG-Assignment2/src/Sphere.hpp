@@ -59,7 +59,7 @@ public:
 
 	virtual SPGeometry clone()
 	{
-		return SPGeometry(new Sphere(radius, position, emission, color, refl));
+		return SPGeometry(new Sphere(radius, position, emission, color, refl, c));
 	}
 
 	virtual size_t getType() const { return eGeometryType_Sphere; }
