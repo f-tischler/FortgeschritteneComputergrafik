@@ -15,8 +15,8 @@ public:
 
 public:
 
-	Sphere(double radius_, Vector position_, Vector emission_, Vector color_, Refl_t refl_, double c = 0.0) :
-		Geometry(emission_, color_, refl_, c),
+	Sphere(double radius_, Vector position_, Vector emission_, Vector color_, Refl_t refl_, double glossiness = 1.0) :
+		Geometry(emission_, color_, refl_, glossiness),
 		radius(radius_), 
 		position(position_)
 	{
@@ -59,7 +59,7 @@ public:
 
 	virtual SPGeometry clone()
 	{
-		return SPGeometry(new Sphere(radius, position, emission, color, refl, c));
+		return SPGeometry(new Sphere(radius, position, emission, color, refl, glossiness));
 	}
 
 	virtual size_t getType() const { return eGeometryType_Sphere; }

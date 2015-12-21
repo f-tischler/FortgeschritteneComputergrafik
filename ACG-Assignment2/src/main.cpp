@@ -59,8 +59,8 @@ inline SPScene getScene()
 	scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, 1e5, 81.6), Vector(), Vector(.75, .75, .75), DIFF)));			/* Floor */
 	scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, -1e5 + 81.6, 81.6), Vector(), Vector(.75, .75, .75), DIFF)));  /* Ceiling */
 
- 	scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(27, 16.5, 47), Vector(), Vector(1, 1, 1)*.999, GLOS, 0.5)));			/* Glossy sphere */
-	scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(73, 16.5, 47), Vector(), Vector(1, 1, 1)*.999, TRAN, 0.5)));			/* Translucent sphere */
+ 	scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(27, 16.5, 47), Vector(), Vector(1, 1, 1)*.999, GLOS, 0.8)));			/* Glossy sphere */
+	scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(73, 16.5, 47), Vector(), Vector(1, 1, 1)*.999, TRAN, 0.8)));			/* Translucent sphere */
 
 //	scene->addGeometry(SPGeometry(new Sphere(1.5, Vector(50, 81.6 - 16.5, 81.6), Vector(4, 4, 4) * 100, Vector(), DIFF))); /* Light */
 
