@@ -10,6 +10,7 @@
 #include "TriangleMesh.hpp"
 #include "Image.hpp"
 #include "Scene.hpp"
+#include "Camera.hpp"
 
 
 class Renderer
@@ -25,7 +26,9 @@ protected:
 	IntersectionInfo mIntersectionInfo;
 
 public:
-	Renderer() : mClearColor(0, 1, 1)
+	Renderer(const Camera& cam) 
+		: mClearColor(0, 1, 1),
+		  _cam(cam)
 	{
 	}
 
@@ -63,11 +66,31 @@ public:
 		mSamples = samples;
 
 		/* Set camera origin and viewing direction (negative z direction) */
-		Ray camera(Vector(50.0, 52.0, 295.6), Vector(0.0, -0.042612, -1.0).Normalized());
+		//Ray camera(Vector(50.0, 52.0, 295.6), Vector(0.0, -0.042612, -1.0).Normalized());
+		
+		/* const auto fov_factor = 0.5135;
 
-		/* Image edge vectors for pixel sampling */
-		Vector cx = Vector(mWidth * 0.5135 / mHeight);
-		Vector cy = (cx.Cross(camera.dir)).Normalized() * 0.5135;
+		Image edge vectors for pixel sampling 
+		auto cx = Vector(mWidth * fov_factor / mHeight, 0, 0);
+		auto cy = (cx.Cross(_cam.GetRay().dir)).Normalized() * fov_factor;*/
+
+		const auto fov = 1.0472; // 60°
+		const auto aspect = width / static_cast<double>(height);
+
+		const auto u = _cam.GetRay().dir.Cross(Vector(0, 1, 0)).Normalized();
+		const auto v = u.Cross(_cam.GetRay().dir).Normalized();
+
+		const auto focalDistance = (_cam.GetLookAt() - _cam.GetPosition()).Length();
+		const auto viewPlaneHalfWidth = std::tan(fov / 2.0) * focalDistance;
+		const auto viewPlaneHalfHeight = viewPlaneHalfWidth / aspect;
+
+		const auto viewPlaneBottomLeft = _cam.GetLookAt() - v * viewPlaneHalfHeight - u * viewPlaneHalfWidth;
+		
+		const auto xIncVector = (2 * u * viewPlaneHalfWidth) / width;
+		const auto yIncVector = (2 * v * viewPlaneHalfHeight) / height;
+
+		const auto apetureRadius = 5.0;
+		const auto apeture = u * apetureRadius + v * apetureRadius;
 
 		/* Final rendering */
 		Image img(mWidth, mHeight);
@@ -84,42 +107,21 @@ public:
 				img.setColor(x, y, Color());
 
 				/* 2x2 subsampling per pixel */
-				for (int sy = 0; sy < 2; sy++)
+				for (auto sy = 0; sy < 2; sy++)
 				{
-					for (int sx = 0; sx < 2; sx++)
+					for (auto sx = 0; sx < 2; sx++)
 					{
-						Color accumulated_radiance = Color();
+						auto accumulated_radiance = Color();
 
 						/* Compute radiance at subpixel using multiple samples */
 						for (auto s = 0u; s < mSamples; s++)
 						{
-							const double r1 = 2.0 * drand48();
-							const double r2 = 2.0 * drand48();
-
-							/* Transform uniform into non-uniform filter samples */
-							double dx;
-							if (r1 < 1.0)
-								dx = sqrt(r1) - 1.0;
-							else
-								dx = 1.0 - sqrt(2.0 - r1);
-
-							double dy;
-							if (r2 < 1.0)
-								dy = sqrt(r2) - 1.0;
-							else
-								dy = 1.0 - sqrt(2.0 - r2);
-
-							/* Ray direction into scene from camera through sample */
-							Vector dir = cx * ((x + (sx + 0.5 + dx) / 2.0) / mWidth - 0.5) +
-								cy * ((y + (sy + 0.5 + dy) / 2.0) / mHeight - 0.5) +
-								camera.dir;
-
-							/* Extend camera ray to start inside box */
-							Vector start = camera.org + dir * 130.0;
-
-							dir = dir.Normalized();
-
-							accumulated_radiance = accumulated_radiance + Radiance(Ray(start, dir), 0, 1) / mSamples;
+							accumulated_radiance += Sample(x, y, 
+														   sx, sy, 
+														   viewPlaneBottomLeft, 
+														   xIncVector, 
+														   yIncVector,
+														   apeture) / mSamples;
 						}
 
 						accumulated_radiance = accumulated_radiance.clamp() * 0.25;
@@ -135,6 +137,8 @@ public:
 	}
 
 private:
+	Camera _cam;
+
 	/******************************************************************
 	* Recursive path tracing for computing radiance via Monte-Carlo
 	* integration; only considers perfectly diffuse, specular or
@@ -382,7 +386,8 @@ private:
     // c can be used as glossiness/translucency factor. c in interval (0, infinity)
     // small c (e.g. 0.01) means mirror like, large c (e.g. 0.9) means really glossy
     // x should be a random number in interval [0, 1]
-    double CDF(double x, double c) {
+    double CDF(double x, double c) const
+    {
         c = c <= 0 ? 1.0e-6 : c;
         double beta = atan(-1.0/c);
         double alpha = atan(1.0/c) - beta;
@@ -392,7 +397,8 @@ private:
     // varyVector varies vector
     // if c is small (e.g. 0.01) vector will be varied only a little bit in its general direction
     // if c is large (e.g. 0.9) vector will be varied a lot and does not necessarily point in its previous general direction
-    void varyVector(Vector &vector, double c) {
+    void varyVector(Vector &vector, double c) const
+    {
         /* Compute random reflection vector on hemisphere */
         double r1 = 2.0 * M_PI * drand48();
         double r2 = drand48();
@@ -417,6 +423,53 @@ private:
         vector += CDF(drand48(), c) * d;
         vector = vector.Normalized();
     }
+
+	Color Sample(int x, int y, int, int, const Vector& viewPlaneBottomLeft, const Vector& xIncVector, const Vector& yIncVector, const Vector& apeture)
+	{
+		//const auto r1 = 2.0 * drand48();
+		//const auto r2 = 2.0 * drand48();
+
+		/* Transform uniform into non-uniform filter samples */
+		//auto sdx = (r1 < 1.0) ? sqrt(r1) - 1.0 : 1.0 - sqrt(2.0 - r1);
+		//auto sdy = (r2 < 1.0) ? sqrt(r2) - 1.0 : 1.0 - sqrt(2.0 - r2);
+
+		const auto dofSamples = 3u;
+
+		auto radiance = Color();
+
+		for (auto i = 0u; i < dofSamples; i++)
+		{
+			const auto r3 = 2.0 * (drand48() - 0.5);
+			const auto r4 = 2.0 * (drand48() - 0.5);
+
+			const auto blurVec = Vector(r3 * apeture.x, r4 * apeture.y );
+
+			auto viewPlanePoint = viewPlaneBottomLeft + x * xIncVector + y * yIncVector;
+
+			auto eyePoint = _cam.GetPosition() + blurVec;
+
+			/* Ray direction into scene from camera through sample */
+			/*auto dir = cx * ((x + (sx + 0.5 + sdx) / 2.0) / mWidth - 0.5) +
+					     cy * ((y + (sy + 0.5 + sdy) / 2.0) / mHeight - 0.5) +
+					     _cam.GetRay().dir;
+				
+			/* Extend camera ray to start inside box */
+			/*auto start = _cam.GetPosition() + dir * 130.0;
+
+			dir = dir.Normalized();
+
+			Ray ray(start, dir);*/
+
+			auto dir = (viewPlanePoint - eyePoint).Normalized();
+			//dir.y *= -1;
+
+			Ray ray(eyePoint, dir);
+
+			radiance += Radiance(ray, 0, 1) / dofSamples;
+		}
+
+		return radiance;
+	}
 };
 
 #endif

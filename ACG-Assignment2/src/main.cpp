@@ -48,13 +48,13 @@ using namespace std;
 
 inline SPScene getScene()
 {
-	static SPScene scene = SPScene(new Scene());
+	static auto scene = SPScene(new Scene());
 
 	scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(1e5 + 1, 40.8, 81.6), Vector(), Vector(.75, .25, .25), DIFF)));	/* Left wall */
 	scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(-1e5 + 99, 40.8, 81.6), Vector(), Vector(.25, .25, .75), DIFF)));	/* Right wall */
 
 	scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, 40.8, 1e5), Vector(), Vector(.75, .75, .75), DIFF)));			/* Back wall */
-	scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, 40.8, -1e5 + 170), Vector(), Vector(), DIFF)));				/* Front wall */
+	//scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, 40.8, -1e5 + 170), Vector(), Vector(), DIFF)));				/* Front wall */
 
 	scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, 1e5, 81.6), Vector(), Vector(.75, .75, .75), DIFF)));			/* Floor */
 	scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, -1e5 + 81.6, 81.6), Vector(), Vector(.75, .75, .75), DIFF)));  /* Ceiling */
@@ -64,8 +64,8 @@ inline SPScene getScene()
 
 //	scene->addGeometry(SPGeometry(new Sphere(1.5, Vector(50, 81.6 - 16.5, 81.6), Vector(4, 4, 4) * 100, Vector(), DIFF))); /* Light */
 
-	auto cubeMesh = loadObj("cube.obj", Vector(), Vector(), SPEC)[0];
-	auto rhino = loadObj("cube.obj", Vector(), Vector(), SPEC)[0];
+	auto cubeMesh(loadObj("cube.obj", Vector(), Vector(), SPEC)[0]);
+	auto rhino(loadObj("cube.obj", Vector(), Vector(), SPEC)[0]);
 
 	auto cube1 = cubeMesh;
 	auto cube2 = rhino;
@@ -156,26 +156,35 @@ inline SPScene getScene2()
 *******************************************************************/
 #include <chrono>
 
-int main(int argc, char *argv[]) 
+int main(int, char *[]) 
 {
-    int width = 320;
-    int height = 240;
-	int samples = 2;
+	const auto width = 320;
+	const auto height = 240;
+	const auto samples = 4;
+	
+	const auto start = std::chrono::system_clock::now();
 
+	const auto camPos = Vector(50.0, 52.0, 220.6);
+	//const auto camPos = Vector(50.0, 52.0, 295.6);
+	//const auto lookAt = camPos + Vector(0.0, 0.12612, -1.0).Normalized() * 130.0f;
+	const auto lookAt = Vector(50.0, 30.0, 80);
 
-	auto start = std::chrono::system_clock::now();
+	const Camera cam(camPos, lookAt);
+	Renderer renderer(cam);
 
+	auto scene = getScene();
+	scene->addGeometry(std::make_shared<Sphere>(1.5, lookAt, Vector(), Vector(1, 0 , 0), DIFF));
+	renderer.buildScene(scene);
 
-	Renderer renderer;
-	renderer.buildScene(getScene());
-	Image img = renderer.render(width, height, samples);
+	auto img = renderer.render(width, height, samples);
 
 	img.Save(string("image.ppm"));
-
 
 	auto end = std::chrono::system_clock::now();
 	auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
 	std::cout << "Time elapsed:" << elapsed.count() << '\n';
 
 	system(string("image.ppm").c_str());
+
+	return EXIT_SUCCESS;
 }

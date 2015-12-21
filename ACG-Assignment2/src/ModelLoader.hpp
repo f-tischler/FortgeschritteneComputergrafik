@@ -24,7 +24,7 @@ inline std::vector<std::shared_ptr<TriangleMesh>> loadObj(const std::string& fil
 
 	for (auto it = shapes.begin(); it != shapes.end(); ++it)
 	{
-		auto trimesh = std::shared_ptr<TriangleMesh>(new TriangleMesh(emmision, color, reflType));
+		auto trimesh = std::make_shared<TriangleMesh>(emmision, color, reflType);
 
 		const auto& shape = *it;
 		for (size_t i = 0; i < shape.mesh.indices.size(); i++)
@@ -37,7 +37,7 @@ inline std::vector<std::shared_ptr<TriangleMesh>> loadObj(const std::string& fil
 		}
 
 
-		result.push_back(trimesh);
+		result.push_back(std::move(trimesh));
 	}
 
 	return result;

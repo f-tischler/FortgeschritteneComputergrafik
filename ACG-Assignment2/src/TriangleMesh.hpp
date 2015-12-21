@@ -42,7 +42,7 @@ public:
 
 		for (size_t i = 0; i < mBoundingBoxes.size(); i++)
 		{
-			if (true || mBoundingBoxes[i].intersect(ray))
+			if (mBoundingBoxes[i].intersect(ray))
 			{
 				auto start = i*mDivCount;
 				auto end = std::min(mVertices.size(), (size_t)i*mDivCount + mDivCount);
@@ -69,11 +69,6 @@ public:
 				}
 			}
 		}
-
-
-
-
-
 
 		if (!found)
 			return 0.0f;
@@ -173,12 +168,12 @@ public:
 
 	virtual SPGeometry clone()
 	{
-		auto mesh = new TriangleMesh(emission, color, refl);
+		auto mesh = std::make_shared<TriangleMesh>(emission, color, refl);
 		mesh->mVertices = mVertices;
 		mesh->mChanged = true;
 		mesh->buildCollision();
 
-		return SPGeometry(mesh);
+		return mesh;
 	}
 
 	void buildCollision()

@@ -43,12 +43,14 @@ public:
 		mGeometries.push_back(geometry);
 	}
 
-	double Intersect(const Ray &ray, IntersectionInfo& info, bool culling = true)
+	bool Intersect(const Ray &ray, IntersectionInfo& info, bool culling = true)
 	{
 		if (!mBB.intersect(ray))
 			return false;
 
 		double T = DBL_MAX;
+
+		info.hit = false;
 
 		#ifdef USE_OMP
 			#pragma omp parallel for
@@ -72,8 +74,11 @@ public:
 					info.geometryId = i;
 				}
 			}
-		}		info.hitpoint = ray.org + ray.dir * info.distance;
-		return (info.hit ? true : false);
+		}
+
+
+		info.hitpoint = ray.org + ray.dir * info.distance;
+		return info.hit;
 	}
 
 	const std::vector<SPGeometry>& geometries() { return mGeometries; }
