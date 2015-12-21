@@ -32,7 +32,7 @@
 //   #define TINYOBJLOADER_IMPLEMENTATION
 //   #include "tiny_obj_loader.h"
 // 
-
+#pragma warning( disable : 4706)
 
 #ifndef _TINY_OBJ_LOADER_H
 #define _TINY_OBJ_LOADER_H

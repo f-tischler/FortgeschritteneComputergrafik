@@ -33,10 +33,7 @@
 #include <iostream>
 #include <fstream>
 
-
-
 using namespace std;
-
 
 #include "Image.hpp"
 #include "Ray.hpp"
@@ -46,10 +43,8 @@ using namespace std;
 #include "Scene.hpp"
 
 
-inline SPScene getScene()
+inline void cornellBox(SPScene scene)
 {
-	static auto scene = SPScene(new Scene());
-
 	scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(1e5 + 1, 40.8, 81.6), Vector(), Vector(.75, .25, .25), DIFF)));	/* Left wall */
 	scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(-1e5 + 99, 40.8, 81.6), Vector(), Vector(.25, .25, .75), DIFF)));	/* Right wall */
 
@@ -58,92 +53,86 @@ inline SPScene getScene()
 
 	scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, 1e5, 81.6), Vector(), Vector(.75, .75, .75), DIFF)));			/* Floor */
 	scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, -1e5 + 81.6, 81.6), Vector(), Vector(.75, .75, .75), DIFF)));  /* Ceiling */
-
- 	scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(27, 16.5, 47), Vector(), Vector(1, 1, 1)*.999, GLOS, 0.5)));			/* Glossy sphere */
-	scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(73, 16.5, 120), Vector(), Vector(1, 1, 1)*.999, TRAN, 0.5)));			/* Translucent sphere */
-
-//	scene->addGeometry(SPGeometry(new Sphere(1.5, Vector(50, 81.6 - 16.5, 81.6), Vector(4, 4, 4) * 100, Vector(), DIFF))); /* Light */
-
-	auto cubeMesh(loadObj("cube.obj", Vector(), Vector(), SPEC)[0]);
-	auto rhino(loadObj("cube.obj", Vector(), Vector(), SPEC)[0]);
-
-	auto cube1 = cubeMesh;
-	auto cube2 = rhino;
-	auto cube3 = std::static_pointer_cast<TriangleMesh>(cubeMesh->clone());
-	auto cube4 = std::static_pointer_cast<TriangleMesh>(cubeMesh->clone());
-
-	//Mirrow
-	cube1->setEmmision(Vector());
-	cube1->setColor(Vector(1, 1, 1)*.999);
-	cube1->setReflectionType(SPEC);
-
-	cube1->scaleToWidth(10.0);
-	cube1->rotateY(45);
-	cube1->translate(20, 10, 80);
-	cube1->buildCollision();
-
-	//Diffuse
-	cube2->setEmmision(Vector());
-	cube2->setColor(Vector(.75, .25, .25));
-	cube2->setReflectionType(DIFF);
-
-	cube2->scaleToWidth(10.0);
-	cube2->rotateY(15);
-	cube2->rotateX(10);
-	cube2->translate(50, 10, 80);
-	cube2->buildCollision();
-
-
-	//Glas
-	cube3->setColor(Vector(1, 1, 1)*.999);
-	cube3->setEmmision(Vector());
-	cube3->setReflectionType(REFR);
-
-	cube3->scaleToWidth(10.0);
-	cube3->rotateY(45);
-	cube3->rotateX(45);
-	cube3->translate(80, 10, 80);
-	cube3->buildCollision();
-
-	//Light
-	cube4->setColor(Vector());
-	cube4->setEmmision(Vector(4,4,4) * 20);
-	cube4->setReflectionType(DIFF);
-
-	cube4->scaleToWidth(5.0);
-	cube4->rotateY(45);
-	cube4->rotateX(45);
-	cube4->translate(40, 50, 80);
-	cube4->buildCollision();
-
-
-	scene->addGeometry(cube1);
-	scene->addGeometry(cube2);
-	scene->addGeometry(cube3);
-	scene->addGeometry(cube4);
-
-	return scene;
 }
 
-inline SPScene getScene2()
+inline void lightSphere(SPScene scene)
 {
-    static SPScene scene = SPScene(new Scene());
-    
-    scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(1e5 + 1, 40.8, 81.6), Vector(), Vector(.75, .25, .25), DIFF)));	/* Left wall */
-    scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(-1e5 + 99, 40.8, 81.6), Vector(), Vector(.25, .25, .75), DIFF)));	/* Right wall */
-    
-    scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, 40.8, 1e5), Vector(), Vector(.75, .75, .75), DIFF)));			/* Back wall */
-    scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, 40.8, -1e5 + 170), Vector(), Vector(), DIFF)));				/* Front wall */
-    
-    scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, 1e5, 81.6), Vector(), Vector(.75, .75, .75), DIFF)));			/* Floor */
-    scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, -1e5 + 81.6, 81.6), Vector(), Vector(.75, .75, .75), DIFF)));  /* Ceiling */
-    
-    scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(27, 16.5, 47), Vector(), Vector(1, 1, 1)*.999, SPEC)));			/* Mirror sphere */
-    scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(73, 16.5, 47), Vector(), Vector(1, 1, 1)*.999, REFR)));			/* Glas sphere */
-    
-    scene->addGeometry(SPGeometry(new Sphere(1.5, Vector(50, 81.6 - 16.5, 81.6), Vector(4, 4, 4) * 100, Vector(), DIFF))); /* Light */
-    
-    return scene;
+	scene->addGeometry(SPGeometry(new Sphere(1.5, Vector(50, 81.6 - 16.5, 81.6), Vector(4, 4, 4) * 100, Vector(), DIFF))); /* Light */
+}
+
+inline void lightCube(SPScene scene)
+{
+	auto cubeMesh = loadObj("cube.obj", Vector(), Vector(), SPEC)[0];
+
+	//Light
+	cubeMesh->setColor(Vector());
+	cubeMesh->setEmmision(Vector(4, 4, 4) * 20);
+	cubeMesh->setReflectionType(DIFF);
+
+	cubeMesh->scaleToWidth(5.0);
+	cubeMesh->rotateY(45);
+	cubeMesh->rotateX(45);
+	cubeMesh->translate(40, 50, 80);
+	cubeMesh->buildCollision();
+	
+	scene->addGeometry(cubeMesh); /* Light */
+}
+
+inline void spheres(SPScene scene)
+{
+	scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(27, 50, 47), Vector(), Vector(1, 1, 1)*.999, GLOS, 0.5)));			/* Glossy sphere */
+	scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(73, 50, 47), Vector(), Vector(1, 1, 1)*.999, TRAN, 0.5)));			/* Translucent sphere */
+}
+
+inline void cornellSpheres(SPScene scene)
+{
+	scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(27, 16.5, 47), Vector(), Vector(1, 1, 1)*.999, GLOS, 0.5)));			/* Glossy sphere */
+	scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(73, 16.5, 78), Vector(), Vector(1, 1, 1)*.999, TRAN, 0.5)));			/* Translucent sphere */
+}
+
+inline void cornellScene(SPScene scene)
+{
+	cornellBox(scene);
+	spheres(scene);
+	lightSphere(scene);
+
+	//cornellSpheres(scene);
+}
+
+inline void finalScene(SPScene scene)
+{
+	cornellBox(scene);
+	lightSphere(scene);
+	spheres(scene);
+
+
+	auto mesh = loadObj("cube.obj", Vector(), Vector(), GLOS)[0];
+
+	//Mirrow
+	mesh->setEmmision(Vector());
+	mesh->setColor(Vector(1, 1, 1)*.999);
+	mesh->setReflectionType(GLOS);
+
+	mesh->scaleToWidth(20.0);
+	mesh->rotateX(10);
+	mesh->translate(75, 10, 85);
+	mesh->buildCollision();
+	scene->addGeometry(mesh);
+
+
+	mesh = loadObj("cube.obj", Vector(), Vector(), REFR)[0];
+
+	//Mirrow
+	mesh->setEmmision(Vector());
+	mesh->setColor(Vector(1, 1, 1)*.999);
+	mesh->setReflectionType(REFR);
+
+	mesh->scaleToWidth(15.0);
+	mesh->rotateY(45);
+	mesh->rotateX(45);
+	mesh->translate(10, 10, 85);
+	mesh->buildCollision();
+	scene->addGeometry(mesh);
 }
 
 
@@ -154,37 +143,61 @@ inline SPScene getScene2()
 * - Number of samples per subpixel (non-uniform filtering): samples 
 * Rendered result saved as PPM image file
 *******************************************************************/
-#include <chrono>
-
-int main(int, char *[]) 
+int main(int argc, char* argv[]) 
 {
-	const auto width = 320;
-	const auto height = 240;
-	const auto samples = 4;
-	
-	const auto start = std::chrono::system_clock::now();
+	auto width = 320;
+    auto height = 240;
+	auto samples = 4;
+	auto scene = std::make_shared<Scene>();
+	auto apetureSize = 5.0;
 
-	const auto camPos = Vector(50.0, 52.0, 220.6);
-	//const auto camPos = Vector(50.0, 52.0, 295.6);
-	//const auto lookAt = camPos + Vector(0.0, 0.12612, -1.0).Normalized() * 130.0f;
+	if (argc > 1)
+		width = atoi(argv[1]);
+	if (argc > 2)
+		height = atoi(argv[2]);
+	if (argc > 3)
+		samples = atoi(argv[3]);
+	if (argc > 4)
+	{
+		cornellBox(scene);
+		lightSphere(scene);
+		auto mesh = loadObj(argv[4], Vector(), Vector(), SPEC)[0];
+
+		//Mirror
+		mesh->setEmmision(Vector());
+		mesh->setColor(Vector(1, 1, 1)*.999);
+		mesh->setReflectionType(SPEC);
+
+		mesh->scaleToWidth(30.0);
+		mesh->translate(50, 10, 50);
+		mesh->buildCollision();
+
+		scene->addGeometry(mesh);
+	}
+	else
+	{
+		finalScene(scene);
+	}
+
+	const auto camPos = Vector(50.0, 52.0, 220);
 	const auto lookAt = Vector(50.0, 30.0, 80);
 
 	const Camera cam(camPos, lookAt);
 	Renderer renderer(cam);
 
-	auto scene = getScene();
-	scene->addGeometry(std::make_shared<Sphere>(1.5, lookAt, Vector(), Vector(1, 0 , 0), DIFF));
+	// uncomment to visualize focus point
+	//scene->addGeometry(std::make_shared<Sphere>(1.5, lookAt, Vector(), Vector(1, 0 , 0), DIFF));
+
 	renderer.buildScene(scene);
 
-	auto img = renderer.render(width, height, samples);
+	auto img = renderer.render(width, height, samples, apetureSize);
 
-	img.Save(string("image.ppm"));
+	auto filename = "image.ppm";
+	img.Save(filename);
 
-	auto end = std::chrono::system_clock::now();
-	auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
-	std::cout << "Time elapsed:" << elapsed.count() << '\n';
-
-	system(string("image.ppm").c_str());
-
-	return EXIT_SUCCESS;
+#if defined(_WIN32) || defined(_WIN64)
+	system(filename);
+#else
+	system(string("open " + std::string(filename)).c_str());
+#endif
 }

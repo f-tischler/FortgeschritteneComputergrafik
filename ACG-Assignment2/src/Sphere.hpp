@@ -15,8 +15,8 @@ public:
 
 public:
 
-	Sphere(double radius_, Vector position_, Vector emission_, Vector color_, Refl_t refl_, double c = 0.0) :
-		Geometry(emission_, color_, refl_, c),
+	Sphere(double radius_, Vector position_, Vector emission_, Vector color_, Refl_t refl_, double glossiness = 1.0) :
+		Geometry(emission_, color_, refl_, glossiness),
 		radius(radius_), 
 		position(position_)
 	{
@@ -24,7 +24,7 @@ public:
 		m_BB.addPoint(position_ - radius);
 	}
 
-	virtual double Intersect(const Ray &ray, Vector& normal, bool)
+	virtual double Intersect(const Ray &ray, Vector& normal, bool /*culling*/)
 	{
 		/* Check for ray-sphere intersection by solving for t:
 		t^2*d.d + 2*t*(o-p).d + (o-p).(o-p) - R^2 = 0 */
@@ -59,7 +59,7 @@ public:
 
 	virtual SPGeometry clone()
 	{
-		return SPGeometry(new Sphere(radius, position, emission, color, refl));
+		return SPGeometry(new Sphere(radius, position, emission, color, refl, glossiness));
 	}
 
 	virtual size_t getType() const { return eGeometryType_Sphere; }

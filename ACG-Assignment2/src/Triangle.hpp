@@ -6,7 +6,6 @@
 
 #include <cassert>
 #include <vector>
-#include <random>
 
 class Triangle
 {
@@ -160,11 +159,8 @@ public:
 
 	Vector point_inside() const
 	{
-		static std::default_random_engine rnd(static_cast<size_t>(time(nullptr)));
-		static std::uniform_real_distribution<double> rng(0.0, 1.0);
-
-		auto e0 = rng(rnd);
-		auto e1 = rng(rnd);
+		auto e0 = drand48();
+		auto e1 = drand48();
 
 		auto rootE0 = std::sqrt(e0);
 
@@ -198,8 +194,10 @@ public:
 		Triangle tmp[4];
 		tri.split(tmp);
 
-		for (const auto& t : tmp)
+		for (auto i = 0; i < 4; i++)
 		{
+			auto& t = tmp[i];
+
 			if (divisions == 1)
 				_subTriangles.push_back(t);
 			else
@@ -225,8 +223,10 @@ public:
 		const auto e = Vector(epsilon, epsilon, epsilon);
 
 		auto added = 0;
-		for(const auto& t : _subTriangles)
+		for (auto it = _subTriangles.begin(); it != _subTriangles.end(); ++it)
 		{
+			auto t = *it;
+
 			if(Vector::AreEqual(tri.getP1(), t.getP1(), e) ||
 			   Vector::AreEqual(tri.getP1(), t.getP2(), e) ||
 			   Vector::AreEqual(tri.getP1(), t.getP3(), e))
@@ -263,7 +263,7 @@ public:
 	const Vector& getP1() const { return _p0; }
 	const Vector& getP2() const { return _p1; }
 	const Vector& getP3() const { return _p2; }
-    const double getA() const { return _a; }
+    double getA() const { return _a; }
 
 private:
 	Vector _p0, _p1, _p2, _normal;

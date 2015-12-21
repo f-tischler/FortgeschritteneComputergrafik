@@ -9,6 +9,10 @@
 #ifndef Matrix_h
 #define Matrix_h
 
+#ifndef _MSVC
+#include <string.h>
+#endif
+
 class Matrix {
 public:
     double m[16];

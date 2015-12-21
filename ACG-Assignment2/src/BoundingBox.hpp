@@ -2,7 +2,8 @@
 #define BoundingBox_H_included
 
 #include "Ray.hpp"
-#ifdef __APPLE__
+
+#ifndef _MSVC
 #include <float.h>
 #endif
 

@@ -60,5 +60,11 @@
     <ClInclude Include="..\..\..\src\ModelLoader.hpp">
       <Filter>src\scene</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\Camera.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\Matrix.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

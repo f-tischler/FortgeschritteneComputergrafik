@@ -11,9 +11,9 @@ class Geometry
 {
 public:
 	Geometry(Vector emission_,
-		Vector color_, Refl_t refl_, double c_ = 0.0) :
+		Vector color_, Refl_t refl_, double glossiness_ = 1.0) :
 		emission(emission_),
-		color(color_), refl(refl_), c(c_)
+		color(color_), refl(refl_), glossiness(glossiness_)
 	{
 	}
 
@@ -28,16 +28,16 @@ public:
 	const Color& getEmmision() const { return emission; }
 	const Color& getColor() const { return color; }
 	Refl_t getReflectionType() const { return refl; }
-    double getConstant() const { return c; }
+    double getGlossiness() const { return glossiness; }
 
 	void setEmmision(Color v) { emission = v; }
 	void setColor(Color v) { color = v; }
 	void setReflectionType(Refl_t v) { refl = v; }
-    void setConstant(double c_) { c = c_; }
+    void setGlossiness(double glossiness_) { glossiness = glossiness_; }
 
 	Color emission, color;
 	Refl_t refl;
-    double c; // glossiness/translucency factor
+    double glossiness;
 
 protected:
 	BoundingBox<Vector> m_BB;

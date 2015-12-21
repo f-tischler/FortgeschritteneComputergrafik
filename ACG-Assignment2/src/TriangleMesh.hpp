@@ -14,13 +14,8 @@ typedef Vector Vertex;
 class TriangleMesh : public Geometry
 {
 public:
-	std::vector<BoundingBox<Vector>> mBoundingBoxes;
-	std::vector<Vertex> mVertices;
-	bool mChanged;
-	int mDivCount = 15;
-
 	TriangleMesh(Vector emission_,Vector color_, Refl_t refl_) :
-		Geometry(emission_, color_, refl_)
+		Geometry(emission_, color_, refl_), mDivCount(15)
 	{
 		mChanged = false;
 	}
@@ -222,10 +217,16 @@ public:
 	}
 
 private:
+	std::vector<BoundingBox<Vector>> mBoundingBoxes;
+	std::vector<Vertex> mVertices;
+	bool mChanged;
+	int mDivCount;
+
 	void transformPoints(Matrix m)
 	{
-		for (auto& v : mVertices)
+		for (auto it = mVertices.begin(); it != mVertices.end(); ++it)
 		{
+			auto& v = *it;
 			v = m * v;
 		}
 

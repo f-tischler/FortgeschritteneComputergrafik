@@ -45,8 +45,8 @@ public:
 
 	bool Intersect(const Ray &ray, IntersectionInfo& info, bool culling = true)
 	{
-		if (!mBB.intersect(ray))
-			return false;
+		//if (!mBB.intersect(ray))
+		//	return false;
 
 		double T = DBL_MAX;
 
@@ -55,7 +55,7 @@ public:
 		#ifdef USE_OMP
 			#pragma omp parallel for
 		#endif
-		for (long i = 0u; i < (long)mGeometries.size(); i++)
+		for (auto i = 0ul; i < mGeometries.size(); i++)
 		{
 			Vector newNormal;
 			double distance = mGeometries[i]->Intersect(ray, newNormal, culling);

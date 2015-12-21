@@ -69,6 +69,7 @@
       <SDLCheck>true</SDLCheck>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>4706</DisableSpecificWarnings>
+      <PreprocessorDefinitions>_MSVC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -85,6 +86,7 @@
       <SDLCheck>true</SDLCheck>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>4706</DisableSpecificWarnings>
+      <PreprocessorDefinitions>_MSVC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -100,6 +102,7 @@
       <OpenMPSupport>false</OpenMPSupport>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>4706</DisableSpecificWarnings>
+      <PreprocessorDefinitions>_MSVC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -128,6 +131,7 @@
     <ClInclude Include="..\..\..\src\Consts.hpp" />
     <ClInclude Include="..\..\..\src\Geometry.hpp" />
     <ClInclude Include="..\..\..\src\Image.hpp" />
+    <ClInclude Include="..\..\..\src\Matrix.hpp" />
     <ClInclude Include="..\..\..\src\ModelLoader.hpp" />
     <ClInclude Include="..\..\..\src\Ray.hpp" />
     <ClInclude Include="..\..\..\src\Renderer.hpp" />
