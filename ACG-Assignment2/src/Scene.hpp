@@ -43,7 +43,7 @@ public:
 		mGeometries.push_back(geometry);
 	}
 
-	double Intersect(const Ray &ray, IntersectionInfo& info, bool culling = true)
+	bool Intersect(const Ray &ray, IntersectionInfo& info, bool culling = true)
 	{
 		if (!mBB.intersect(ray))
 			return false;
@@ -73,7 +73,7 @@ public:
 				}
 			}
 		}		info.hitpoint = ray.org + ray.dir * info.distance;
-		return (info.hit ? true : false);
+		return info.hit;
 	}
 
 	const std::vector<SPGeometry>& geometries() { return mGeometries; }

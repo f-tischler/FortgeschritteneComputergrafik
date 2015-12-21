@@ -24,7 +24,7 @@ public:
 		m_BB.addPoint(position_ - radius);
 	}
 
-	virtual double Intersect(const Ray &ray, Vector& normal, bool culling)
+	virtual double Intersect(const Ray &ray, Vector& normal, bool /*culling*/)
 	{
 		/* Check for ray-sphere intersection by solving for t:
 		t^2*d.d + 2*t*(o-p).d + (o-p).(o-p) - R^2 = 0 */

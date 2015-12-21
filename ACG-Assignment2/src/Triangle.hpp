@@ -227,8 +227,6 @@ public:
 		auto added = 0;
 		for(const auto& t : _subTriangles)
 		{
-			auto matches = 0;
-			
 			if(Vector::AreEqual(tri.getP1(), t.getP1(), e) ||
 			   Vector::AreEqual(tri.getP1(), t.getP2(), e) ||
 			   Vector::AreEqual(tri.getP1(), t.getP3(), e))

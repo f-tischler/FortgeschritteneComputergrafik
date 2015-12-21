@@ -45,11 +45,8 @@ using namespace std;
 #include "Triangle.hpp"
 #include "Scene.hpp"
 
-
-inline SPScene getScene()
+inline void cornellBox(SPScene scene)
 {
-	static SPScene scene = SPScene(new Scene());
-
 	scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(1e5 + 1, 40.8, 81.6), Vector(), Vector(.75, .25, .25), DIFF)));	/* Left wall */
 	scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(-1e5 + 99, 40.8, 81.6), Vector(), Vector(.25, .25, .75), DIFF)));	/* Right wall */
 
@@ -58,111 +55,48 @@ inline SPScene getScene()
 
 	scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, 1e5, 81.6), Vector(), Vector(.75, .75, .75), DIFF)));			/* Floor */
 	scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, -1e5 + 81.6, 81.6), Vector(), Vector(.75, .75, .75), DIFF)));  /* Ceiling */
+}
 
- 	scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(27, 16.5, 47), Vector(), Vector(1, 1, 1)*.999, GLOS, 0.5)));			/* Glossy sphere */
-	scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(73, 16.5, 47), Vector(), Vector(1, 1, 1)*.999, TRAN, 0.5)));			/* Translucent sphere */
+inline void lightSphere(SPScene scene)
+{
+	scene->addGeometry(SPGeometry(new Sphere(1.5, Vector(50, 81.6 - 16.5, 81.6), Vector(4, 4, 4) * 100, Vector(), DIFF))); /* Light */
+}
 
-//	scene->addGeometry(SPGeometry(new Sphere(1.5, Vector(50, 81.6 - 16.5, 81.6), Vector(4, 4, 4) * 100, Vector(), DIFF))); /* Light */
-
+inline void lightCube(SPScene scene)
+{
 	auto cubeMesh = loadObj("cube.obj", Vector(), Vector(), SPEC)[0];
-	auto rhino = loadObj("cube.obj", Vector(), Vector(), SPEC)[0];
-
-	auto cube1 = cubeMesh;
-	auto cube2 = rhino;
-	auto cube3 = std::static_pointer_cast<TriangleMesh>(cubeMesh->clone());
-	auto cube4 = std::static_pointer_cast<TriangleMesh>(cubeMesh->clone());
-
-	//Mirrow
-	cube1->setEmmision(Vector());
-	cube1->setColor(Vector(1, 1, 1)*.999);
-	cube1->setReflectionType(SPEC);
-
-	cube1->scaleToWidth(10.0);
-	cube1->rotateY(45);
-	cube1->translate(20, 10, 80);
-	cube1->buildCollision();
-
-	//Diffuse
-	cube2->setEmmision(Vector());
-	cube2->setColor(Vector(.75, .25, .25));
-	cube2->setReflectionType(DIFF);
-
-	cube2->scaleToWidth(10.0);
-	cube2->rotateY(15);
-	cube2->rotateX(10);
-	cube2->translate(50, 10, 80);
-	cube2->buildCollision();
-
-
-	//Glas
-	cube3->setColor(Vector(1, 1, 1)*.999);
-	cube3->setEmmision(Vector());
-	cube3->setReflectionType(REFR);
-
-	cube3->scaleToWidth(10.0);
-	cube3->rotateY(45);
-	cube3->rotateX(45);
-	cube3->translate(80, 10, 80);
-	cube3->buildCollision();
 
 	//Light
-	cube4->setColor(Vector());
-	cube4->setEmmision(Vector(4,4,4) * 20);
-	cube4->setReflectionType(DIFF);
+	cubeMesh->setColor(Vector());
+	cubeMesh->setEmmision(Vector(4, 4, 4) * 20);
+	cubeMesh->setReflectionType(DIFF);
 
-	cube4->scaleToWidth(5.0);
-	cube4->rotateY(45);
-	cube4->rotateX(45);
-	cube4->translate(40, 50, 80);
-	cube4->buildCollision();
+	cubeMesh->scaleToWidth(5.0);
+	cubeMesh->rotateY(45);
+	cubeMesh->rotateX(45);
+	cubeMesh->translate(40, 50, 80);
+	cubeMesh->buildCollision();
 
-
-	scene->addGeometry(cube1);
-	scene->addGeometry(cube2);
-	scene->addGeometry(cube3);
-	scene->addGeometry(cube4);
-
-	return scene;
+	scene->addGeometry(cubeMesh); /* Light */
 }
 
-inline SPScene getScene2()
+inline void spheres(SPScene scene)
 {
-    static SPScene scene = SPScene(new Scene());
-    
-    scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(1e5 + 1, 40.8, 81.6), Vector(), Vector(.75, .25, .25), DIFF)));	/* Left wall */
-    scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(-1e5 + 99, 40.8, 81.6), Vector(), Vector(.25, .25, .75), DIFF)));	/* Right wall */
-    
-    scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, 40.8, 1e5), Vector(), Vector(.75, .75, .75), DIFF)));			/* Back wall */
-    scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, 40.8, -1e5 + 170), Vector(), Vector(), DIFF)));				/* Front wall */
-    
-    scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, 1e5, 81.6), Vector(), Vector(.75, .75, .75), DIFF)));			/* Floor */
-    scene->addGeometry(SPGeometry(new Sphere(1e5, Vector(50, -1e5 + 81.6, 81.6), Vector(), Vector(.75, .75, .75), DIFF)));  /* Ceiling */
-    
-    scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(27, 16.5, 47), Vector(), Vector(1, 1, 1)*.999, SPEC)));			/* Mirror sphere */
-    scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(73, 16.5, 47), Vector(), Vector(1, 1, 1)*.999, REFR)));			/* Glas sphere */
-    
-    scene->addGeometry(SPGeometry(new Sphere(1.5, Vector(50, 81.6 - 16.5, 81.6), Vector(4, 4, 4) * 100, Vector(), DIFF))); /* Light */
-    
-    return scene;
+	scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(27, 16.5, 47), Vector(), Vector(1, 1, 1)*.999, GLOS, 0.5)));			/* Glossy sphere */
+	scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(73, 16.5, 47), Vector(), Vector(1, 1, 1)*.999, TRAN, 0.5)));			/* Translucent sphere */
 }
 
-inline SPScene getScene3()
+inline void cornellSpheres(SPScene scene)
 {
-    static SPScene scene = SPScene(new Scene());
-    
-    scene->addGeometry(SPGeometry(new Sphere( 1e5, Vector( 1e5  +1,      40.8,      81.6),  Vector(), Vector(.75,.25,.25), DIFF))); /* Left wall */
-    scene->addGeometry(SPGeometry(new Sphere( 1e5, Vector(-1e5 +99,      40.8,      81.6),  Vector(), Vector(.25,.25,.75), DIFF))); /* Rght wall */
-    scene->addGeometry(SPGeometry(new Sphere( 1e5, Vector(      50,      40.8,       1e5),  Vector(), Vector(.75,.75,.75), DIFF))); /* Back wall */
-    scene->addGeometry(SPGeometry(new Sphere( 1e5, Vector(      50,      40.8, -1e5 +170),  Vector(), Vector(),            DIFF))); /* Front wall */
-    scene->addGeometry(SPGeometry(new Sphere( 1e5, Vector(      50,       1e5,      81.6),  Vector(), Vector(.75,.75,.75), DIFF))); /* Floor */
-    scene->addGeometry(SPGeometry(new Sphere( 1e5, Vector(      50,-1e5 +81.6,      81.6),  Vector(), Vector(.75,.75,.75), DIFF))); /* Ceiling */
-    
-    scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(27, 16.5, 47), Vector(), Vector(1,1,1)*.999,  GLOS, 0.5))); /* Mirror sphere */
-    scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(73, 16.5, 78), Vector(), Vector(1,1,1)*.999,  TRAN, 0.5))); /* Glas sphere */
-    
-    scene->addGeometry(SPGeometry(new Sphere( 1.5, Vector(50, 81.6-16.5, 81.6), Vector(4,4,4)*100, Vector(), DIFF))); /* Light */
-    
-    return scene;
+	scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(27, 16.5, 47), Vector(), Vector(1, 1, 1)*.999, GLOS, 0.5)));			/* Glossy sphere */
+	scene->addGeometry(SPGeometry(new Sphere(16.5, Vector(73, 16.5, 78), Vector(), Vector(1, 1, 1)*.999, TRAN, 0.5)));			/* Translucent sphere */
+}
+
+inline void cornellScene(SPScene scene)
+{
+	cornellBox(scene);
+	cornellSpheres(scene);
+	lightSphere(scene);
 }
 
 
@@ -179,14 +113,43 @@ int main(int argc, char *argv[])
 {
     int width = 320;
     int height = 240;
-	int samples = 16;
+	int samples = 4;
+	SPScene scene = SPScene(new Scene());
+
+	if (argc > 1)
+		width = atoi(argv[1]);
+	if (argc > 2)
+		height = atoi(argv[2]);
+	if (argc > 3)
+		samples = atoi(argv[3]);
+	if (argc > 4)
+	{
+		cornellBox(scene);
+		lightSphere(scene);
+		auto mesh = loadObj(argv[4], Vector(), Vector(), SPEC)[0];
+
+		//Mirrow
+		mesh->setEmmision(Vector());
+		mesh->setColor(Vector(1, 1, 1)*.999);
+		mesh->setReflectionType(SPEC);
+
+		mesh->scaleToWidth(30.0);
+		mesh->translate(50, 10, 50);
+		mesh->buildCollision();
+
+		scene->addGeometry(mesh);
+	}
+	else
+	{
+		cornellScene(scene);
+	}
 
 
 	auto start = std::chrono::system_clock::now();
 
 
 	Renderer renderer;
-	renderer.buildScene(getScene());
+	renderer.buildScene(scene);
 	Image img = renderer.render(width, height, samples);
 
 	auto filename = "image.ppm";

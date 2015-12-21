@@ -42,7 +42,7 @@ public:
 
 		for (size_t i = 0; i < mBoundingBoxes.size(); i++)
 		{
-			if (true || mBoundingBoxes[i].intersect(ray))
+			if (mBoundingBoxes[i].intersect(ray))
 			{
 				auto start = i*mDivCount;
 				auto end = std::min(mVertices.size(), (size_t)i*mDivCount + mDivCount);
