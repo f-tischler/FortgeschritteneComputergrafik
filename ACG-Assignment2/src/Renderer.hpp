@@ -159,7 +159,8 @@ private:
         const auto &obj = *mIntersectionInfo.geometry;
         
         Vector nl = mIntersectionInfo.normal;
-        
+
+			
         /* Obtain flipped normal, if object hit from inside */
         if (mIntersectionInfo.normal.Dot(ray.dir) >= 0)
             nl = nl*-1.0;
@@ -313,67 +314,72 @@ private:
             return obj.emission + col.MultComponents(Radiance(Ray(mIntersectionInfo.hitpoint, L_prime), depth, 1));
         }
         
-        /* Otherwise object transparent, i.e. assumed dielectric glass material */
-        Vector L = ray.dir;
-        Vector N = mIntersectionInfo.normal;
-        Vector L_prime = L - N * 2 * (N.Dot(L));
-        if(obj.refl == TRAN) varyVector(L_prime, obj.getConstant());
-        Ray reflRay (mIntersectionInfo.hitpoint, L_prime);  /* Prefect reflection */
-        bool into = mIntersectionInfo.normal.Dot(nl) > 0;       /* Bool for checking if ray from outside going in */
-        double nc = 1;                        /* Index of refraction of air (approximately) */
-        double nt = 1.5;                      /* Index of refraction of glass (approximately) */
-        double nnt;
-        
-        if(into)      /* Set ratio depending on hit from inside or outside */
-            nnt = nc/nt;
-        else
-            nnt = nt/nc;
-        
-        double ddn = ray.dir.Dot(nl);
-        double cos2t = 1 - nnt * nnt * (1 - ddn*ddn);
-        
-        /* Check for total internal reflection, if so only reflect */
-        if (cos2t < 0)
-            return obj.emission + col.MultComponents( Radiance(reflRay, depth, 1));
-        
-        /* Otherwise reflection and/or refraction occurs */
-        Vector tdir;
-        
-        /* Determine transmitted ray direction for refraction */
-        if(into)
-            tdir = (ray.dir * nnt - mIntersectionInfo.normal * (ddn * nnt + sqrt(cos2t))).Normalized();
-        else
-            tdir = (ray.dir * nnt + mIntersectionInfo.normal * (ddn * nnt + sqrt(cos2t))).Normalized();
-        
-        /* Determine R0 for Schlick큦 approximation */
-        double a = nt - nc;
-        double b = nt + nc;
-        double R0 = a*a / (b*b);
-        
-        /* Cosine of correct angle depending on outside/inside */
-        double c;
-        if(into)
-            c = 1 + ddn;
-        else
-            c = 1 - tdir.Dot(mIntersectionInfo.normal);
-        
-        /* Compute Schlick큦 approximation of Fresnel equation */
-        double Re = R0 + (1 - R0) *c*c*c*c*c;   /* Reflectance */
-        double Tr = 1 - Re;                     /* Transmittance */
-        
-        /* Probability for selecting reflectance or transmittance */
-        double P = .25 + .5 * Re;
-        double RP = Re / P;         /* Scaling factors for unbiased estimator */
-        double TP = Tr / (1 - P);
-        
-        if (depth < 3)   /* Initially both reflection and trasmission */
-            return obj.emission + col.MultComponents(Radiance(reflRay, depth, 1) * Re +
-                                                     Radiance(Ray(mIntersectionInfo.hitpoint, tdir), depth, 1) * Tr);
-        else             /* Russian Roulette */
-            if (drand48() < P)
-                return obj.emission + col.MultComponents(Radiance(reflRay, depth, 1) * RP);
-            else
-                return obj.emission + col.MultComponents(Radiance(Ray(mIntersectionInfo.hitpoint,tdir), depth, 1) * TP);
+		/* Otherwise object transparent, i.e. assumed dielectric glass material */
+		Vector L = ray.dir;
+		Vector normal = mIntersectionInfo.normal;
+		auto hitpoint = mIntersectionInfo.hitpoint;
+		Vector N = normal;
+		Vector L_prime = L - N * 2 * (N.Dot(L));
+		if (obj.refl == TRAN) varyVector(L_prime, 0.8);
+		Ray reflRay(hitpoint, L_prime);  /* Prefect reflection */
+		bool into = normal.Dot(nl) > 0;       /* Bool for checking if ray from outside going in */
+		double nc = 1;                        /* Index of refraction of air (approximately) */
+		double nt = 1.5;                      /* Index of refraction of glass (approximately) */
+		double nnt;
+
+		if (into)      /* Set ratio depending on hit from inside or outside */
+			nnt = nc / nt;
+		else
+			nnt = nt / nc;
+
+		double ddn = ray.dir.Dot(nl);
+		double cos2t = 1 - nnt * nnt * (1 - ddn*ddn);
+
+		/* Check for total internal reflection, if so only reflect */
+		if (cos2t < 0)
+			return obj.emission + col.MultComponents(Radiance(reflRay, depth, 1));
+
+		/* Otherwise reflection and/or refraction occurs */
+		Vector tdir;
+
+		/* Determine transmitted ray direction for refraction */
+		if (into)
+			tdir = (ray.dir * nnt - normal * (ddn * nnt + sqrt(cos2t))).Normalized();
+		else
+			tdir = (ray.dir * nnt + normal * (ddn * nnt + sqrt(cos2t))).Normalized();
+
+
+		if (obj.refl == TRAN) varyVector(tdir, 0.8);
+
+		/* Determine R0 for Schlick큦 approximation */
+		double a = nt - nc;
+		double b = nt + nc;
+		double R0 = a*a / (b*b);
+
+		/* Cosine of correct angle depending on outside/inside */
+		double c;
+		if (into)
+			c = 1 + ddn;
+		else
+			c = 1 - tdir.Dot(normal);
+
+		/* Compute Schlick큦 approximation of Fresnel equation */
+		double Re = R0 + (1 - R0) *c*c*c*c*c;   /* Reflectance */
+		double Tr = 1 - Re;                     /* Transmittance */
+
+		/* Probability for selecting reflectance or transmittance */
+		double P = .25 + .5 * Re;
+		double RP = Re / P;         /* Scaling factors for unbiased estimator */
+		double TP = Tr / (1 - P);
+
+		if (depth < 3)   /* Initially both reflection and trasmission */
+			return obj.emission + col.MultComponents(Radiance(reflRay, depth, 1) * Re +
+			Radiance(Ray(hitpoint, tdir), depth, 1) * Tr);
+		else             /* Russian Roulette */
+		if (drand48() < P)
+			return obj.emission + col.MultComponents(Radiance(reflRay, depth, 1) * RP);
+		else
+			return obj.emission + col.MultComponents(Radiance(Ray(hitpoint, tdir), depth, 1) * TP);
 	}
     
     // Cumulative distribution function
@@ -387,34 +393,54 @@ private:
         return c * tan(alpha * x + beta);
     }
     
-    // varyVector varies vector
-    // if c is small (e.g. 0.01) vector will be varied only a little bit in its general direction
-    // if c is large (e.g. 0.9) vector will be varied a lot and does not necessarily point in its previous general direction
-    void varyVector(Vector &vector, double c) {
-        /* Compute random reflection vector on hemisphere */
-        double r1 = 2.0 * M_PI * drand48();
-        double r2 = drand48();
-        double r2s = sqrt(r2);
-        
-        /* Set up local orthogonal coordinate system u,v,w on surface */
-        Vector w = vector;
-        Vector u;
-        
-        if (fabs(w.x) > .1)
-            u = Vector(0.0, 1.0, 0.0);
-        else
-            u = (Vector(1.0, 0.0, 0.0).Cross(w)).Normalized();
-        
-        Vector v = w.Cross(u);
-        
-        /* Random reflection vector d */
-        Vector d = (u * cos(r1) * r2s +
-                    v * sin(r1) * r2s +
-                    w * sqrt(1 - r2)).Normalized();
-        
-        vector += CDF(drand48(), c) * d;
-        vector = vector.Normalized();
-    }
+
+	// myFunction1
+	// input:  x should be a random number between 0 and 1
+	//         glossiness should be a value between 0 and 1
+	//         small glossiness means really blurry reflection (evenly distributed randomness)
+	//         large glossiness means really sharp reflection (unevenly distributed randomness)
+	// output: a value between -1 and 1
+	double myFunction1(double x, double glossiness) {
+		if (glossiness < 0) glossiness = 0;
+		if (glossiness >= 1.0) glossiness = 1.0 - 1.0e-6;
+		double c = -1.0 / log(glossiness);
+		double beta = atan(-c);
+		double alpha = atan(c) - beta;
+		return (1.0 / c) * tan(alpha * x + beta);
+	}
+
+	// myFunction2
+	// input:  x should be a random number between 0 and 1
+	//         glossiness should be a value between 0 and 1
+	//         small glossiness means really blurry reflection (evenly distributed randomness)
+	//         large glossiness means really sharp reflection (unevenly distributed randomness)
+	// output: a value between 0 and 1
+	double myFunction2(double x, double glossiness) {
+		if (glossiness < 0) glossiness = 0;
+		if (glossiness >= 1.0) glossiness = 1.0 - 1.0e-6;
+		double c = -1.0 / log(glossiness);
+		return exp(c * x - c);
+	}
+
+	// varyVector varies vector
+	void varyVector(Vector &vector, double glossiness) {
+		/* Compute random reflection vector on half hemisphere */
+		double oldtheta = acos(vector.z);
+		double oldphi = atan(vector.y / vector.x);
+		double deltatheta = M_PI * (2 * drand48() - 1);
+		double deltaphi = (M_PI / 4.0) * (2 * drand48() - 1);
+
+		double theta = oldtheta + deltatheta;
+		double phi = oldphi + deltaphi;
+
+		/* Random reflection vector d */
+		Vector d = Vector(sin(theta) * cos(phi),
+			sin(theta) * sin(phi),
+			cos(theta));
+
+		vector += myFunction2(drand48(), glossiness) * d; // myFunction2 works better than myFunction1, since the vector will still point in the same general direction
+		vector = vector.Normalized();
+	}
 };
 
 #endif
