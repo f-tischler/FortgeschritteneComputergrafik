@@ -309,7 +309,7 @@ private:
             Vector N = mIntersectionInfo.normal;
             Vector L_prime = L - N * 2 * (N.Dot(L));
          
-            varyVector(L_prime, obj.getConstant());
+            varyVector(L_prime, obj.getGlossiness());
          
             return obj.emission + col.MultComponents(Radiance(Ray(mIntersectionInfo.hitpoint, L_prime), depth, 1));
         }
@@ -320,7 +320,7 @@ private:
 		auto hitpoint = mIntersectionInfo.hitpoint;
 		Vector N = normal;
 		Vector L_prime = L - N * 2 * (N.Dot(L));
-		if (obj.refl == TRAN) varyVector(L_prime, 0.8);
+		if (obj.refl == TRAN) varyVector(L_prime, obj.getGlossiness());
 		Ray reflRay(hitpoint, L_prime);  /* Prefect reflection */
 		bool into = normal.Dot(nl) > 0;       /* Bool for checking if ray from outside going in */
 		double nc = 1;                        /* Index of refraction of air (approximately) */
@@ -349,7 +349,7 @@ private:
 			tdir = (ray.dir * nnt + normal * (ddn * nnt + sqrt(cos2t))).Normalized();
 
 
-		if (obj.refl == TRAN) varyVector(tdir, 0.8);
+		if (obj.refl == TRAN) varyVector(tdir, obj.getGlossiness());
 
 		/* Determine R0 for Schlick´s approximation */
 		double a = nt - nc;
@@ -381,18 +381,6 @@ private:
 		else
 			return obj.emission + col.MultComponents(Radiance(Ray(hitpoint, tdir), depth, 1) * TP);
 	}
-    
-    // Cumulative distribution function
-    // c can be used as glossiness/translucency factor. c in interval (0, infinity)
-    // small c (e.g. 0.01) means mirror like, large c (e.g. 0.9) means really glossy
-    // x should be a random number in interval [0, 1]
-    double CDF(double x, double c) {
-        c = c <= 0 ? 1.0e-6 : c;
-        double beta = atan(-1.0/c);
-        double alpha = atan(1.0/c) - beta;
-        return c * tan(alpha * x + beta);
-    }
-    
 
 	// myFunction1
 	// input:  x should be a random number between 0 and 1
