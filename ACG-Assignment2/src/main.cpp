@@ -145,9 +145,9 @@ inline void finalScene(SPScene scene)
 *******************************************************************/
 int main(int argc, char* argv[]) 
 {
-	auto width = 320;
-    auto height = 240;
-	auto samples = 4;
+	auto width = 640;
+    auto height = 480;
+	auto samples = 8;
 	auto scene = std::make_shared<Scene>();
 	auto apetureSize = 5.0;
 
@@ -180,7 +180,7 @@ int main(int argc, char* argv[])
 	}
 
 	const auto camPos = Vector(50.0, 52.0, 220);
-	const auto lookAt = Vector(50.0, 30.0, 80);
+	const auto lookAt = Vector(75, 10, 105);
 
 	const Camera cam(camPos, lookAt);
 	Renderer renderer(cam);
