@@ -6,7 +6,6 @@
 #include "Ray.hpp"
 #include "Geometry.hpp"
 
-
 class Sphere : public Geometry
 {
 public:
