@@ -3,6 +3,7 @@
 
 #include "Material.hpp"
 #include "BoundingBox.hpp"
+#include "kdtree.h"
 
 enum eGeometryType
 {
@@ -14,7 +15,7 @@ class Geometry
 {
 public:
 	explicit Geometry(const Material& material, eGeometryType type) 
-		: _material(material), _type(type) { }
+		: _type(type), _material(material) { }
 
 	virtual ~Geometry() = default;
 

@@ -76,7 +76,7 @@ public:
 
 			auto endY = _image.GetHeight();
 
-			tasks.push_back(std::async([&, this, startY, startX, endY, endX, tidx]()
+			tasks.push_back(std::async(std::launch::deferred, [&, this, startY, startX, endY, endX, tidx]()
 			{
 				for (auto y = startY; y < endY; y++)
 				{
@@ -91,7 +91,7 @@ public:
 								/* Compute radiance at subpixel using multiple samples */
 								for (auto s = 0u; s < _config.samplesPerSubSample; s++)
 								{
-									futures.push_back(std::async([&, this]()
+									futures.push_back(std::async(std::launch::deferred, [&, this]()
 									{
 										return Sample(x, y,
 											sx, sy,

@@ -1,3 +1,4 @@
+#include "KdPhotonMappingRadianceProvider.hpp"
 #ifndef main_H
 #define main_H
 
@@ -43,7 +44,7 @@ int main(int argc, char* argv[])
 	scene.AddGeometry(std::make_unique<Sphere>(blueDiffuseMat, Vector(5150, 0, 0), 5000.0f));
 	scene.AddGeometry(std::make_unique<Sphere>(greyDiffuseMat, Vector(0, 0, -5050), 5000.0f));
 
-	auto radianceProvider = SimplePhotonMappingRadianceProvider(false);
+	auto radianceProvider = KdPhotonMappingRadianceProvider(false);
 	radianceProvider.CreatePhotonMap(scene);
 
 	auto config = RaytracerConfiguration
@@ -62,9 +63,14 @@ int main(int argc, char* argv[])
 
 	raytracer.Render();
 
-	image.Save("image.ppm");
+    auto filename = "image.ppm";
+	image.Save(filename);
 
-	system("image.ppm");
+#if defined(_WIN32) || defined(_WIN64)
+    system(filename);
+#else
+    system(std::string("open " + std::string(filename)).c_str());
+#endif
 
 	return EXIT_SUCCESS;
 }

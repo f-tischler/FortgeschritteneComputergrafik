@@ -143,6 +143,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\src\kdtree.c" />
     <ClCompile Include="..\..\..\src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -151,7 +152,9 @@
     <ClInclude Include="..\..\..\src\Common.hpp" />
     <ClInclude Include="..\..\..\src\Geometry.hpp" />
     <ClInclude Include="..\..\..\src\Image.hpp" />
+    <ClInclude Include="..\..\..\src\KdPhotonMappingRadianceProvider.hpp" />
     <ClInclude Include="..\..\..\src\Material.hpp" />
+    <ClInclude Include="..\..\..\src\NanoFlannKdPMRP.hpp" />
     <ClInclude Include="..\..\..\src\SimplePhotonMappingRadianceProvider.h" />
     <ClInclude Include="..\..\..\src\Ray.hpp" />
     <ClInclude Include="..\..\..\src\Raytracer.hpp" />
