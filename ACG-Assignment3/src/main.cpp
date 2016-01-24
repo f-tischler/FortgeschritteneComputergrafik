@@ -59,9 +59,14 @@ int main(int argc, char* argv[])
 
 	raytracer.Render();
 
-	image.Save("image.ppm");
+    auto filename = "image.ppm";
+	image.Save(filename);
 
-	system("image.ppm");
+#if defined(_WIN32) || defined(_WIN64)
+    system(filename);
+#else
+    system(std::string("open " + std::string(filename)).c_str());
+#endif
 
 	return EXIT_SUCCESS;
 }

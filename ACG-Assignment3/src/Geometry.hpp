@@ -3,6 +3,7 @@
 
 #include "Material.hpp"
 #include "BoundingBox.hpp"
+#include "kdtree.h"
 
 enum eGeometryType
 {
@@ -14,9 +15,11 @@ class Geometry
 {
 public:
 	explicit Geometry(const Material& material, eGeometryType type) 
-		: _material(material), _type(type) { }
+		: _material(material), _type(type), _tree(kd_create(3)) { }
 
-	virtual ~Geometry() = default;
+    ~Geometry() {
+        kd_free(_tree);
+    }
 
 	bool Intersects(const Ray& ray, Vector& normal, float& distance)
 	{
@@ -27,6 +30,7 @@ public:
 
 	const auto& GetMaterial() const { return _material; }
 	auto GetType() const { return _type; }
+    struct kdtree* GetTree() { return _tree; }
 
 protected:
 	virtual bool IntersectsGeometry(const Ray& r, Vector& normal, float& distance) = 0;
@@ -37,6 +41,7 @@ private:
 	eGeometryType _type;
 	Material _material;
 	BoundingBox _boundingBox;
+    struct kdtree* _tree;
 };
 
 #endif // Geometry_H

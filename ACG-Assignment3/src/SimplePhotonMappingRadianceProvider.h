@@ -8,6 +8,7 @@
 #include "Scene.hpp"
 #include "Sphere.hpp"
 #include <list>
+#include "kdtree.h"
 
 
 struct TracingInfo;
@@ -57,20 +58,28 @@ public:
 
 		auto color = Color(0, 0, 0);
 
-		auto photons = _photonMap.find(reinterpret_cast<size_t>(intersectionInfo.geometry))->second;
+        struct kdres* set = kd_nearest_range3f(intersectionInfo.geometry->GetTree(), intersectionInfo.hitpoint.x, intersectionInfo.hitpoint.y, intersectionInfo.hitpoint.z, 100.0f);
+        
+        std::vector<Photon> photons;
+        while(!kd_res_end(set)) {
+            Photon* ptr = static_cast<Photon*>(kd_res_item_data(set));
+            photons.push_back(*ptr);
+            kd_res_next(set);
+        }
 
-		std::sort(photons.begin(), photons.end(), 
+		/*std::sort(photons.begin(), photons.end(),
 			[&intersectionInfo] (const Photon& p1, const Photon& p2)
 		{
 			auto distP1 = glm::length2(intersectionInfo.hitpoint - p1.position);
 			auto distP2 = glm::length2(intersectionInfo.hitpoint - p2.position);
 
 			return distP1 < distP2;
-		});
+		});*/
 
 		auto n = 0;
 		
 		constexpr auto maxPhotonGathered = 50;
+        
 		for (auto& photon : photons)
 		{
 			auto weight = std::max(0.0f, -glm::dot(intersectionInfo.normal, photon.direction));
@@ -81,7 +90,9 @@ public:
 		}
 
 		auto maxDistSq = 0.0f;
-		if(n < photons.size())
+        if(n == 0) {
+            return Color(0,0,0);
+        } else if(n < photons.size())
 		{
 			maxDistSq = glm::length2(intersectionInfo.hitpoint - photons[n].position);
 		}
@@ -89,7 +100,9 @@ public:
 		{
 			maxDistSq = glm::length2(intersectionInfo.hitpoint - photons.back().position);
 		}
-
+        
+        kd_res_free(set);
+        
 		return color / (maxDistSq * PI);
 	}
 
@@ -97,7 +110,15 @@ public:
 	{
 		if (_photonMap.find(reinterpret_cast<size_t>(intersectionInfo.geometry)) == _photonMap.end()) return Color(0, 0, 0);
 		
-		auto photons = _photonMap.find(reinterpret_cast<size_t>(intersectionInfo.geometry))->second;
+        struct kdres* set = kd_nearest_range3f(intersectionInfo.geometry->GetTree(), intersectionInfo.hitpoint.x, intersectionInfo.hitpoint.y, intersectionInfo.hitpoint.z, 100.0f);
+        
+        std::vector<Photon> photons;
+        while(!kd_res_end(set)) {
+            Photon* ptr = static_cast<Photon*>(kd_res_item_data(set));
+            photons.push_back(*ptr);
+            kd_res_next(set);
+        }
+        
 		for (auto& photon : photons)
 		{
 			if(glm::length2(photon.position - intersectionInfo.hitpoint) < debugEpsilon)
@@ -135,6 +156,7 @@ private:
 			photon.position = info.hitpoint;
 			photon.radiance *= info.geometry->GetMaterial().GetColor();
 			_photonMap[reinterpret_cast<size_t>(info.geometry)].push_back(photon);
+            kd_insert3f(info.geometry->GetTree(), photon.position.x, photon.position.y, photon.position.z, &photon);
 
 			photon.direction = glm::reflect(photon.direction, info.normal);
 			photon.radiance *= 1.0f / glm::sqrt(depth);
