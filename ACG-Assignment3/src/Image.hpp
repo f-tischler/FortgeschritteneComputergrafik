@@ -61,7 +61,7 @@ public:
         f = fopen(filename.c_str(), "wb");
 #endif
 		
-		fprintf(f, "P3\n%d %d\n%d\n", _width, _height, 255);
+		fprintf(f, "P3\n%d %d\n%d\n", static_cast<unsigned>(_width), static_cast<unsigned>(_height), 255);
 
 		for (auto i = 0ul; i < _width * _height; i++)
 		{

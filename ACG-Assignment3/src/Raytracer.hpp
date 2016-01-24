@@ -6,6 +6,7 @@
 #include "Scene.hpp"
 #include <iostream>
 #include <random>
+#include <future>
 
 struct TracingInfo
 {
@@ -58,43 +59,119 @@ public:
 
 		const auto apeture = u * _config.apetureSize + v * _config.apetureSize;
 
-		/* Loop over image rows */
+		const auto numThreads = std::thread::hardware_concurrency();
+		const auto numXperThread = static_cast<Image::SizeType>(_image.GetWidth() / numThreads + (_image.GetWidth() % numThreads == 0 ? 0 : 1));
+		//const auto numYperThread = static_cast<Image::SizeType>(_image.GetHeight() / numThreads + (_image.GetHeight() % numThreads == 0 ? 0 : 1));
+
+		std::atomic<Image::SizeType> fragmentsDone = 0;
+		std::vector<std::future<void>> tasks;
+
+		for (auto tidx = 0ul; tidx < numThreads; tidx++)
+		{
+			const auto startX = tidx * numXperThread;
+			const auto startY = 0;
+
+			auto endX = startX + numXperThread;
+			if (endX >= _image.GetWidth()) endX = _image.GetWidth();
+
+			auto endY = _image.GetHeight();
+
+			tasks.push_back(std::async([&, this, startY, startX, endY, endX, tidx]()
+			{
+				for (auto y = startY; y < endY; y++)
+				{
+					for (auto x = startX; x < endX; x++)
+					{
+						std::vector<std::future<Color>> futures;
+
+						for (auto sy = 0u; sy < _config.subSamplesPerPixel; sy++)
+						{
+							for (auto sx = 0u; sx < _config.subSamplesPerPixel; sx++)
+							{
+								/* Compute radiance at subpixel using multiple samples */
+								for (auto s = 0u; s < _config.samplesPerSubSample; s++)
+								{
+									futures.push_back(std::async([&, this]()
+									{
+										return Sample(x, y,
+											sx, sy,
+											viewPlaneBottomLeft,
+											xIncVector,
+											yIncVector,
+											apeture) / static_cast<float>(_config.samplesPerSubSample);
+									}));
+								}
+							}
+						}
+
+						_image.SetColor(x, y, Color());
+
+						auto accumulated_radiance = Color();
+						for (auto& future : futures)
+						{
+							accumulated_radiance += glm::clamp(future.get(), 0.0f, 1.0f)
+								/ static_cast<float>(_config.subSamplesPerPixel * _config.subSamplesPerPixel);
+						}
+
+						_image.AddColor(x, y, accumulated_radiance);
+
+						
+					}
+					
+					fragmentsDone += endX - startX;
+					if (tidx == 0)
+					{
+						std::cout << "\rRendering (" << _config.subSamplesPerPixel * _config.samplesPerSubSample * _config.samplesPerSubSample << " spp) " << (100.0 * fragmentsDone / (_image.GetHeight() * _image.GetWidth())) << "%     ";
+					}
+				}
+			}));
+		}
+
+		for(auto& task : tasks)
+		{
+			task.wait();
+		}
+
+		/* Loop over image rows
 		for (auto y = 0u; y < _image.GetHeight(); y++)
 		{
-			std::cout << "\rRendering (" << _config.subSamplesPerPixel * _config.samplesPerSubSample << " spp) " << (100.0 * y / (_image.GetHeight() - 1)) << "%     ";
-			srand(y * y * y);
+			std::cout << "\rRendering (" << _config.subSamplesPerPixel * _config.samplesPerSubSample * _config.samplesPerSubSample << " spp) " << (100.0 * y / (_image.GetHeight() - 1)) << "%     ";
 
-			/* Loop over row pixels */
 			for (auto x = 0u; x < _image.GetWidth(); x++)
 			{
-				_image.SetColor(x, y, Color());
-
-				/* 2x2 subsampling per pixel */
+				std::vector<std::future<Color>> futures;
+				
 				for (auto sy = 0u; sy < _config.subSamplesPerPixel; sy++)
 				{
 					for (auto sx = 0u; sx < _config.subSamplesPerPixel; sx++)
 					{
-						auto accumulated_radiance = Color();
-
-						/* Compute radiance at subpixel using multiple samples */
 						for (auto s = 0u; s < _config.samplesPerSubSample; s++)
-						{
-							accumulated_radiance += Sample(x, y,
-								sx, sy,
-								viewPlaneBottomLeft,
-								xIncVector,
-								yIncVector,
-								apeture) / static_cast<float>(_config.samplesPerSubSample);
+						{	
+							futures.push_back(std::async([&, this] ()
+							{
+								return Sample(x, y,
+									sx, sy,
+									viewPlaneBottomLeft,
+									xIncVector,
+									yIncVector,
+									apeture) / static_cast<float>(_config.samplesPerSubSample);
+							}));
 						}
-
-						accumulated_radiance = glm::clamp(accumulated_radiance, 0.0f, 1.0f) 
-							/ static_cast<float>(_config.subSamplesPerPixel * _config.subSamplesPerPixel);
-
-						_image.AddColor(x, y, accumulated_radiance);
 					}
 				}
+
+				_image.SetColor(x, y, Color());
+
+				auto accumulated_radiance = Color();
+				for(auto& future : futures)
+				{
+					accumulated_radiance += glm::clamp(future.get(), 0.0f, 1.0f)
+						/ static_cast<float>(_config.subSamplesPerPixel * _config.subSamplesPerPixel);
+				}
+				
+				_image.AddColor(x, y, accumulated_radiance);
 			}
-		}
+		} */
 
 		std::cout << std::endl;
 	}
@@ -112,12 +189,11 @@ private:
 	RadianceProviderType& _radianceProvider;
 	Color _clearColor;
 
-	std::default_random_engine _rnd;
 	std::uniform_real_distribution<float> _rng;
 
-	auto GetRandom() { return _rng(_rnd); }
+	auto GetRandom() const { static std::default_random_engine _rnd; return _rng(_rnd); }
 
-	Color Sample(int x, int y, int, int, const Vector& viewPlaneBottomLeft, const Vector& xIncVector, const Vector& yIncVector, const Vector& apeture)
+	Color Sample(Image::SizeType x, Image::SizeType y, int, int, const Vector& viewPlaneBottomLeft, const Vector& xIncVector, const Vector& yIncVector, const Vector& apeture) const
 	{
 		const auto r1 = 2.0f * GetRandom();
 		const auto r2 = 2.0f * GetRandom();
@@ -128,7 +204,7 @@ private:
 
 		auto radiance = Color();
 
-		auto dofSamples = 2ul;
+		auto dofSamples = _config.dofSamples;
 		for (auto i = 0ul; i < dofSamples; i++)
 		{
 			const auto r3 = 2.0f * (GetRandom() - 0.5f);

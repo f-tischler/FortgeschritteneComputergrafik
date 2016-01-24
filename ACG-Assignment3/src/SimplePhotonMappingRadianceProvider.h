@@ -36,10 +36,11 @@ public:
 					const auto sphere = static_cast<Sphere*>(object.get());
 
 					Photon photon;
-					photon.radiance = material.GetEmission();
+					photon.radiance = material.GetEmission() / static_cast<float>(photonCount);
 					photon.direction = glm::normalize(Vector(GetRandom(), GetRandom(), GetRandom()));
 					photon.position = sphere->GetPosition() + photon.direction * (sphere->GetRadius() + 0.00001f);
-					
+					photon.depth = 0;
+
 					SendPhoton(scene, photon);
 				}	
 			}
@@ -53,44 +54,48 @@ public:
 		if (intersectionInfo.geometry->GetMaterial().GetEmission() != Vector(0, 0, 0))
 			return intersectionInfo.geometry->GetMaterial().GetEmission();
 
-		if (_photonMap.find(reinterpret_cast<size_t>(intersectionInfo.geometry)) == _photonMap.end()) return Color(0, 0, 0);
+		auto it = _photonMap.find(reinterpret_cast<size_t>(intersectionInfo.geometry));
+		if (it == _photonMap.end()) return Color(0, 0, 0);
 
-		auto color = Color(0, 0, 0);
+		auto photons = it->second;
 
-		auto photons = _photonMap.find(reinterpret_cast<size_t>(intersectionInfo.geometry))->second;
+		for(auto& photon : photons)
+		{
+			photon.distance =  glm::length(intersectionInfo.hitpoint - photon.position);
+		}
 
 		std::sort(photons.begin(), photons.end(), 
 			[&intersectionInfo] (const Photon& p1, const Photon& p2)
 		{
-			auto distP1 = glm::length2(intersectionInfo.hitpoint - p1.position);
-			auto distP2 = glm::length2(intersectionInfo.hitpoint - p2.position);
-
-			return distP1 < distP2;
+			return p1.distance < p2.distance;
 		});
-
-		auto n = 0;
 		
-		constexpr auto maxPhotonGathered = 50;
+		constexpr auto maxPhotonGathered = 100;
+		auto maxDist = 0.0f;
+		if (maxPhotonGathered < photons.size())
+		{
+			maxDist = photons[maxPhotonGathered].distance;
+		}
+		else
+		{
+			maxDist = photons.back().distance;
+		}
+
+		auto n = 0;	
+		constexpr auto k = 1;
+		auto color = Color(0, 0, 0);
+
 		for (auto& photon : photons)
 		{
 			auto weight = std::max(0.0f, -glm::dot(intersectionInfo.normal, photon.direction));
-			//weight *= (1.0f - glm::sqrt(distance));/// exposure;
+
+			weight *= 1.0f - photon.distance / (k * maxDist);/// exposure;
 			color += photon.radiance * weight;
 
 			if (++n > maxPhotonGathered) break;
 		}
 
-		auto maxDistSq = 0.0f;
-		if(n < photons.size())
-		{
-			maxDistSq = glm::length2(intersectionInfo.hitpoint - photons[n].position);
-		}
-		else
-		{
-			maxDistSq = glm::length2(intersectionInfo.hitpoint - photons.back().position);
-		}
-
-		return color / (maxDistSq * PI);
+		return (color / (maxDist * maxDist * PI)) * intersectionInfo.geometry->GetMaterial().GetColor();
 	}
 
 	Color DisplayPhoton(const IntersectionInfo& intersectionInfo, TracingInfo& tracingInfo) const
@@ -102,7 +107,7 @@ public:
 		{
 			if(glm::length2(photon.position - intersectionInfo.hitpoint) < debugEpsilon)
 			{
-				return Color(1, 1, 1);
+				return photon.radiance;
 			}
 		}
 
@@ -110,15 +115,17 @@ public:
 	}
 
 private:
-	static constexpr auto maxDepth = 4;
-	static constexpr auto photonCount = 1000;
-	static constexpr auto debugEpsilon = 0.1f;
+	static constexpr auto maxDepth = 3;
+	static constexpr auto photonCount = 100000;
+	static constexpr auto debugEpsilon = 0.01f;
 
 	struct Photon
 	{
 		Color radiance;
 		Vector position;
 		Vector direction;
+		float distance;
+		int depth;
 	};
 
 	float GetRandom() { return _rng(_rnd); }
@@ -133,11 +140,12 @@ private:
 		if(scene.Intersect(ray, info))
 		{
 			photon.position = info.hitpoint;
-			photon.radiance *= info.geometry->GetMaterial().GetColor();
 			_photonMap[reinterpret_cast<size_t>(info.geometry)].push_back(photon);
 
+			photon.radiance *= info.geometry->GetMaterial().GetColor();
 			photon.direction = glm::reflect(photon.direction, info.normal);
-			photon.radiance *= 1.0f / glm::sqrt(depth);
+			photon.radiance *= 0.8f;
+			photon.depth++;
 
 			SendPhoton(scene, photon, ++depth);
 		}
