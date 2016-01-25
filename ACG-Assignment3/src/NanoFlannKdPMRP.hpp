@@ -61,7 +61,7 @@ public:
 		resultSet.init(&ret_index, &out_dist_sqr);
 		_index.findNeighbors(resultSet, &query_pt[0], nanoflann::SearchParams(10));
 
-		return resultSet.;
+		return resultSet;
 	}
 
 	const auto& GetPhotons() const { return _data; }
@@ -119,7 +119,7 @@ public:
 
 	Color GetRadiance(const IntersectionInfo& intersectionInfo, TracingInfo& tracingInfo) const
 	{
-		if (_debug) return DisplayPhoton(intersectionInfo, tracingInfo);
+		/*if (_debug) return DisplayPhoton(intersectionInfo, tracingInfo);
 
 		if (intersectionInfo.geometry->GetMaterial().GetEmission() != Vector(0, 0, 0))
 			return intersectionInfo.geometry->GetMaterial().GetEmission();
@@ -171,12 +171,14 @@ public:
 
 
 
-		return color / (maxDistSq * PI);
+		return color / (maxDistSq * PI);*/
+
+		return Color(0, 0, 0);
 	}
 
 	Color DisplayPhoton(const IntersectionInfo& intersectionInfo, TracingInfo& tracingInfo) const
 	{
-		auto it = _photonMap.find(reinterpret_cast<size_t>(intersectionInfo.geometry));
+		/*auto it = _photonMap.find(reinterpret_cast<size_t>(intersectionInfo.geometry));
 		if (it == _photonMap.end()) return Color(0, 0, 0);
 
 		auto set = it->second.GetNeighbours(intersectionInfo.hitpoint, 50);
@@ -195,7 +197,7 @@ public:
 			}
 		}
 
-
+		*/
 
 		return Color(0, 0, 0);
 	}
