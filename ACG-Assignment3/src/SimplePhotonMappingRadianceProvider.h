@@ -3,6 +3,7 @@
 
 #include <map>
 #include <random>
+#include <cmath>
 #include "glm/gtx/norm.hpp"
 
 #include "Scene.hpp"
@@ -51,11 +52,23 @@ public:
 	{
 		if (_debug) return DisplayPhoton(intersectionInfo, tracingInfo);
 
-		if (intersectionInfo.geometry->GetMaterial().GetEmission() != Vector(0, 0, 0))
+		//Is light
+		if (intersectionInfo.geometry->GetMaterial().HasEmission())
 			return intersectionInfo.geometry->GetMaterial().GetEmission();
 
+
+
+
+
+
+
+		//Has photon
+
 		auto it = _photonMap.find(reinterpret_cast<size_t>(intersectionInfo.geometry));
-		if (it == _photonMap.end()) return Color(0, 0, 0);
+		if (it == _photonMap.end()) 
+			return Color(0, 0, 0);
+
+
 
 		auto photons = it->second;
 

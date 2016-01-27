@@ -26,6 +26,7 @@ public:
 	const auto& GetColor() const { return _color; }
 	auto GetReflectionType() const { return _refl; }
 	auto GetGlossiness() const { return _glossiness; }
+	auto HasEmission() const { return _emission != Vector(0, 0, 0); }
 
 	void SetEmmision(const Color& v) { _emission = v; }
 	void SetColor(const Color& v) { _color = v; }
