@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
 	constexpr auto width = 640ul;
 	constexpr auto height = 480ul;
 
-	const auto camPos = Vector(0, 120.0, 400);
+	const auto camPos = Vector(0, 120.0, 600);
 	const auto lookAt = Vector(0, 10, 0);
 	constexpr auto fov = 1.0472f;//60.0f / 180.0f * PI;
 
@@ -32,10 +32,26 @@ int main(int argc, char* argv[])
 	auto greenDiffuseMat = Material(eReflectionType::DIFF, Color(0, 1, 0), Color(0, 0, 0), 0);
 	auto whiteDiffuseMat = Material(eReflectionType::DIFF, Color(1, 1, 1), Color(0, 0, 0), 0);
 
+	auto whiteSpecularMat = Material(eReflectionType::SPEC, Color(1, 1, 1), Color(0, 0, 0), 0);
+	auto greyGlossyMat = Material(eReflectionType::GLOS, Color(0.6, 0.6, 0.6), Color(0, 0, 0), 0.5f);
+	auto whiteTransMat = Material(eReflectionType::TRAN, Color(1,1,1), Color(0, 0, 0), 0.0f);
+
 	auto lightMat = Material(eReflectionType::DIFF, Color(1, 1, 1), Color(500000, 500000, 500000), 0.0f);
 
-	scene.AddGeometry(std::make_unique<Sphere>(whiteDiffuseMat, Vector(-70, 45, 50), 40.0f));
-	scene.AddGeometry(std::make_unique<Sphere>(whiteDiffuseMat, Vector(75, 40, 70), 20.0f));
+
+	//Back left
+	scene.AddGeometry(std::make_unique<Sphere>(greyGlossyMat, Vector(-70, 45, 70), 40.0f));
+
+	//back right
+	scene.AddGeometry(std::make_unique<Sphere>(whiteSpecularMat, Vector(75, 45, 70), 40.0f));
+
+	//front left
+	scene.AddGeometry(std::make_unique<Sphere>(whiteTransMat, Vector(-70, 45, 190), 70.0f));
+
+	//front right
+	scene.AddGeometry(std::make_unique<Sphere>(blueDiffuseMat, Vector(75, 35, 190), 20.0f));
+
+	//light
 	scene.AddGeometry(std::make_unique<Sphere>(lightMat, Vector(0, 200, 60), 8.0f));
 
 	scene.AddGeometry(std::make_unique<Sphere>(whiteDiffuseMat, Vector(0, -5000, 0), 5000.0f));
@@ -49,8 +65,8 @@ int main(int argc, char* argv[])
 
 	auto config = RaytracerConfiguration
 	{
-		2, // subSamplesPerPixel
-		2, // unsigned int samplesPerSubSample;
+		1, // subSamplesPerPixel
+		1, // unsigned int samplesPerSubSample;
 		1, // unsigned int dofSamples;
 		1, // float apetureSize;
 	};

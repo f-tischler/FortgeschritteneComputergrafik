@@ -27,12 +27,13 @@ public:
 	}
 
 	const auto& GetMaterial() const { return _material; }
+	const auto& GetBoundingBox() const { return _boundingBox; }
 	auto GetType() const { return _type; }
 
 protected:
+	auto& GetBoundingBox() { return _boundingBox; }
 	virtual bool IntersectsGeometry(const Ray& r, Vector& normal, float& distance) = 0;
 
-	auto& GetBoundingBox() { return _boundingBox; }
 
 private:
 	eGeometryType _type;
