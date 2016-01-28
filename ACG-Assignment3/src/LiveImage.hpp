@@ -101,6 +101,18 @@ void colour(const float data, float* out) {
 }
 
 
+#include <mutex>
+
+class LiveImage;
+std::vector<LiveImage*> images;
+
+class Renderer
+{
+	Renderer()
+	{
+
+	}
+};
 
 
 class LiveImage
@@ -108,34 +120,38 @@ class LiveImage
 	int w;
 	int h;
 
+	std::mutex mGuard;
+	std::vector<Color> mPixels;
+
 public:
 	LiveImage(int w, int h) : w(w), h(h)
 	{
-		
+		mPixels.resize(w*h);
+
+		for (size_t i = 0; i < w*h; i++)
+			mPixels[i] = Color(1.f,0.f,1.f);
+
+		images.push_back(this);
+	}
+
+	void draw()
+	{
+		std::lock_guard<std::mutex> lock(mGuard);
+		glDrawPixels(w, h, GL_RGB, GL_FLOAT, mPixels.data());
 	}
 
 	void show()
 	{
-		glutInit(nullptr, nullptr);
-
 		glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
 		glutInitWindowSize(w, h);
 		glutCreateWindow("OpenGL glDrawPixels demo");
 
-		glutDisplayFunc([]{
-		
-			//Create some nice colours (3 floats per pixel) from data -10..+10
-			float* pixels = new float[size * 3];
-			for (int i = 0; i<size; i++) {
-				colour(10.0 - ((i*20.0) / size), &pixels[i * 3]);
-			}
-
+		glutDisplayFunc([]
+		{
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			//http://msdn2.microsoft.com/en-us/library/ms537062.aspx
-			//glDrawPixels writes a block of pixels to the framebuffer.
-
-			glDrawPixels(window_width, window_height, GL_RGB, GL_FLOAT, pixels);
+			for (auto img : images)
+				img->draw();
 
 			glutSwapBuffers();
 		});
@@ -143,15 +159,24 @@ public:
 
 		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.0, 0.0, 0.0, 1.0);
-
-
-		glutMainLoop();
 	}
 
+	void draw(Image& img)
+	{
+
+	}
 
 	void set(int x, int y, Color c)
 	{
-		
+		static long t = 0;
+		if (t++ % 500 == 0)
+		{
+			glutMainLoopEvent();
+			glutPostRedisplay();
+		}
+
+		std::lock_guard<std::mutex> lock(mGuard);
+		mPixels[y*w + x] = c;
 	}
 };
 

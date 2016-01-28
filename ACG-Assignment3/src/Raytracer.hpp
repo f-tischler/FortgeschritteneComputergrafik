@@ -9,7 +9,7 @@
 #include <random>
 #include <future>
 
-#include "LiveImage.h"
+#include "LiveImage.hpp"
 
 
 
@@ -76,7 +76,7 @@ public:
 		const auto numXperThread = static_cast<Image::SizeType>(_image.GetWidth() / numThreads + (_image.GetWidth() % numThreads == 0 ? 0 : 1));
 		//const auto numYperThread = static_cast<Image::SizeType>(_image.GetHeight() / numThreads + (_image.GetHeight() % numThreads == 0 ? 0 : 1));
 
-		auto liveImage = LiveImage(_image.GetWidth(), _image.GetHeight());
+		LiveImage liveImage(_image.GetWidth(), _image.GetHeight());
 		liveImage.show();
 
 		std::atomic<Image::SizeType> fragmentsDone = 0;
@@ -133,8 +133,7 @@ public:
 
 						_image.AddColor(x, y, accumulated_radiance);
 
-						liveImage.set(x,y, accumulated_radiance);
-						
+						liveImage.set(x, y, accumulated_radiance);
 					}
 					
 					fragmentsDone += endX - startX;

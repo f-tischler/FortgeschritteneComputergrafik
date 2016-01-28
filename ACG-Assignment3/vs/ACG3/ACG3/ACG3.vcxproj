@@ -74,12 +74,14 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <LibraryPath>$(SolutionDir)..\..\src\opengl\lib\x64\v120;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <LibraryPath>C:\Users\Mathias Hölzl\Documents\FortgeschritteneComputergrafik\ACG-Assignment3\src\opengl\lib\x64\v120;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -153,6 +155,7 @@
     <ClInclude Include="..\..\..\src\Geometry.hpp" />
     <ClInclude Include="..\..\..\src\Image.hpp" />
     <ClInclude Include="..\..\..\src\KdPhotonMappingRadianceProvider.hpp" />
+    <ClInclude Include="..\..\..\src\LiveImage.hpp" />
     <ClInclude Include="..\..\..\src\Material.hpp" />
     <ClInclude Include="..\..\..\src\NanoFlannKdPMRP.hpp" />
     <ClInclude Include="..\..\..\src\SimplePhotonMappingRadianceProvider.h" />

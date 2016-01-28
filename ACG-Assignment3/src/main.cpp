@@ -15,6 +15,8 @@
 
 int main(int argc, char* argv[])
 {
+	glutInit(&argc, argv);
+
 	constexpr auto width = 640ul;
 	constexpr auto height = 480ul;
 
@@ -43,13 +45,13 @@ int main(int argc, char* argv[])
 	scene.AddGeometry(std::make_unique<Sphere>(greyGlossyMat, Vector(-70, 45, 70), 40.0f));
 
 	//back right
-	scene.AddGeometry(std::make_unique<Sphere>(whiteSpecularMat, Vector(75, 45, 70), 40.0f));
+	scene.AddGeometry(std::make_unique<Sphere>(redDiffuseMat, Vector(75, 45, 70), 40.0f));
 
 	//front left
-	scene.AddGeometry(std::make_unique<Sphere>(whiteTransMat, Vector(-70, 45, 190), 70.0f));
+	scene.AddGeometry(std::make_unique<Sphere>(whiteSpecularMat, Vector(-70, 0, 250), 60.0f));
 
 	//front right
-	scene.AddGeometry(std::make_unique<Sphere>(blueDiffuseMat, Vector(75, 35, 190), 20.0f));
+	scene.AddGeometry(std::make_unique<Sphere>(whiteTransMat, Vector(75, 35, 250), 60.0f));
 
 	//light
 	scene.AddGeometry(std::make_unique<Sphere>(lightMat, Vector(0, 200, 60), 8.0f));
@@ -65,8 +67,8 @@ int main(int argc, char* argv[])
 
 	auto config = RaytracerConfiguration
 	{
-		1, // subSamplesPerPixel
-		1, // unsigned int samplesPerSubSample;
+		2, // subSamplesPerPixel
+		2, // unsigned int samplesPerSubSample;
 		1, // unsigned int dofSamples;
 		1, // float apetureSize;
 	};

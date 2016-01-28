@@ -61,5 +61,8 @@
     <ClInclude Include="..\..\..\src\NanoFlannKdPMRP.hpp">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\LiveImage.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
