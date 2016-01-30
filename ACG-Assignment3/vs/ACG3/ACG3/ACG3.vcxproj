@@ -163,6 +163,7 @@
     <ClInclude Include="..\..\..\src\Image.hpp" />
     <ClInclude Include="..\..\..\src\LiveImage.hpp" />
     <ClInclude Include="..\..\..\src\Material.hpp" />
+    <ClInclude Include="..\..\..\src\ModelLoader.hpp" />
     <ClInclude Include="..\..\..\src\NanoFlannKdPMRP.hpp" />
     <ClInclude Include="..\..\..\src\SimplePhotonMappingRadianceProvider.h" />
     <ClInclude Include="..\..\..\src\Ray.hpp" />
@@ -170,6 +171,8 @@
     <ClInclude Include="..\..\..\src\Scene.hpp" />
     <ClInclude Include="..\..\..\src\SimpleRadianceProvider.hpp" />
     <ClInclude Include="..\..\..\src\Sphere.hpp" />
+    <ClInclude Include="..\..\..\src\TinyObjLoader.hpp" />
+    <ClInclude Include="..\..\..\src\TriangleMesh.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

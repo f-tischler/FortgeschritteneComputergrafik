@@ -12,13 +12,14 @@
 #include "NanoFlannKdPMRP.hpp"
 #include "SimpleRadianceProvider.hpp"
 #include "SimplePhotonMappingRadianceProvider.h"
+#include "ModelLoader.hpp"
 
 int main(int argc, char* argv[])
 {
 	glutInit(&argc, argv);
 
-	constexpr auto width = 400ul;
-	constexpr auto height = 200ul;
+	constexpr auto width = 600ul;
+	constexpr auto height = 400ul;
 
 	constexpr auto roomWidth  = 400.f;
 	constexpr auto roomHeight = 300.f;
@@ -35,7 +36,8 @@ int main(int argc, char* argv[])
 
 	auto redDiffuseMat = Material(eReflectionType::DIFF, Color(1, 0, 0), Color(0, 0, 0), 0);
 	auto blueDiffuseMat = Material(eReflectionType::DIFF, Color(0, 0, 1), Color(0, 0, 0), 0);
-	auto greyDiffuseMat = Material(eReflectionType::DIFF, Color(0.5, 0.5, 0.5), Color(0, 0, 0), 0);
+	auto greyDiffuseMat = Material(eReflectionType::DIFF, Color(0.1, 0.1, 0.1), Color(0, 0, 0), 0);
+	auto brownDiffuseMat = Material(eReflectionType::DIFF, Color(0.823529, 0.411765, 0.117647), Color(0, 0, 0), 0);
 	auto greenDiffuseMat = Material(eReflectionType::DIFF, Color(0, 1, 0), Color(0, 0, 0), 0);
 	auto whiteDiffuseMat = Material(eReflectionType::DIFF, Color(1, 1, 1), Color(0, 0, 0), 0);
 
@@ -44,6 +46,10 @@ int main(int argc, char* argv[])
 	auto whiteTransMat = Material(eReflectionType::TRAN, Color(1, 1, 1)*.999f, Color(0), 0.0f);
 
 	auto lightMat = Material(eReflectionType::DIFF, Color(255.f /255.f, 147.f / 255.f, 41.f / 255.f), Color(255.f / 255.f, 147.f / 255.f, 41.f / 255.f)*lightPower, 0.0f);
+
+
+
+
 
 
 	//Back left
@@ -56,18 +62,36 @@ int main(int argc, char* argv[])
 	scene.AddGeometry(std::make_unique<Sphere>(greySpecularMat, Vector(-70, 0, 250), 60.0f));
 
 	//front right
-	scene.AddGeometry(std::make_unique<Sphere>(whiteTransMat, Vector(75, 60, 250), 40.0f));
+	//scene.AddGeometry(std::make_unique<Sphere>(whiteTransMat, Vector(75, 60, 250), 40.0f));
+	if(true)
+	{
+		auto cube = loadObj("diamond.obj", whiteTransMat);
+		cube->scale(Vector(30.0f, 30.0f, 30.0f));
+		//cube->rotate(Vector(20.f, 0.f, 20.f));
+		cube->translate(Vector(75, 60, 250));
+
+		scene.AddGeometry(std::move(cube));
+	}
+	else
+	{
+		auto cube = loadObj("Wine glass_low.obj", whiteTransMat);
+		cube->scale(Vector(30.0f, 30.0f, 30.0f));
+		//cube->rotate(Vector(20.f, 0.f, 20.f));
+		cube->translate(Vector(75, 60, 250));
+
+		scene.AddGeometry(std::move(cube));
+	}
 
 	//light
 	scene.AddGeometry(std::make_unique<Sphere>(lightMat, Vector(0, 190, 160), 8.0f));
 
 	auto r = 50000.0f;
 
-	scene.AddGeometry(std::make_unique<Sphere>(greyDiffuseMat, Vector(0, r + roomHeight, 0), r));
-	scene.AddGeometry(std::make_unique<Sphere>(greyDiffuseMat, Vector(0,-r, 0), r));
+	scene.AddGeometry(std::make_unique<Sphere>(brownDiffuseMat, Vector(0, r + roomHeight, 0), r));
+	scene.AddGeometry(std::make_unique<Sphere>(brownDiffuseMat, Vector(0,-r, 0), r));
 	scene.AddGeometry(std::make_unique<Sphere>(greenDiffuseMat, Vector(-r - roomWidth/2, 0, 0), r));
 	scene.AddGeometry(std::make_unique<Sphere>(blueDiffuseMat, Vector(r + roomWidth / 2, 0, 0), r));
-	scene.AddGeometry(std::make_unique<Sphere>(whiteDiffuseMat, Vector(0, 0, -r - roomWidth / 2), r));
+	scene.AddGeometry(std::make_unique<Sphere>(greyDiffuseMat, Vector(0, 0, -r - roomWidth / 2), r));
 
 	{
 		auto radianceProvider = NanoFlannKdPMRP(true);
@@ -75,8 +99,8 @@ int main(int argc, char* argv[])
 
 		auto config = RaytracerConfiguration
 		{
-			2, // subSamplesPerPixel
-			8, // unsigned int samplesPerSubSample;
+			1, // subSamplesPerPixel
+			1, // unsigned int samplesPerSubSample;
 			1, // unsigned int dofSamples;
 			1, // float apetureSize;
 		};
