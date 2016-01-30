@@ -3,7 +3,6 @@
 
 #include "Material.hpp"
 #include "BoundingBox.hpp"
-#include "kdtree.h"
 
 enum eGeometryType
 {

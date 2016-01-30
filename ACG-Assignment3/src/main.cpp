@@ -1,4 +1,3 @@
-#include "KdPhotonMappingRadianceProvider.hpp"
 #ifndef main_H
 #define main_H
 
@@ -10,8 +9,10 @@
 #include "Scene.hpp"
 #include "Sphere.hpp"
 #include "Raytracer.hpp"
+
 #include "SimpleRadianceProvider.hpp"
 #include "SimplePhotonMappingRadianceProvider.h"
+#include "NanoFlannKdPMRP.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -44,7 +45,7 @@ int main(int argc, char* argv[])
 	scene.AddGeometry(std::make_unique<Sphere>(blueDiffuseMat, Vector(5150, 0, 0), 5000.0f));
 	scene.AddGeometry(std::make_unique<Sphere>(greyDiffuseMat, Vector(0, 0, -5050), 5000.0f));
 
-	auto radianceProvider = KdPhotonMappingRadianceProvider(false);
+	auto radianceProvider = NanoFlannKdPMRP(false);
 	radianceProvider.CreatePhotonMap(scene);
 
 	auto config = RaytracerConfiguration
