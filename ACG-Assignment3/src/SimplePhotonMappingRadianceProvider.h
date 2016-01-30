@@ -129,7 +129,7 @@ public:
 
 private:
 	static constexpr auto maxDepth = 3;
-	static constexpr auto photonCount = 20000;
+	static constexpr auto photonCount = 1000;
 	static constexpr auto debugEpsilon = 0.01f;
 
 	struct Photon
@@ -153,16 +153,219 @@ private:
 
 		if(scene.Intersect(ray, info))
 		{
-			photon.position = info.hitpoint;
-			_photonMap[reinterpret_cast<size_t>(info.geometry)].push_back(photon);
+			const auto& obj = *info.geometry;
 
-			photon.radiance *= info.geometry->GetMaterial().GetColor();
-			photon.direction = glm::reflect(photon.direction, info.normal);
-			photon.radiance *= 0.8f;
-			photon.depth++;
+			auto glossiness = obj.GetMaterial().GetGlossiness();
+			auto emission = obj.GetMaterial().GetEmission();
+			auto col = obj.GetMaterial().GetColor();
 
-			SendPhoton(scene, photon, ++depth);
+			/* Maximum RGB reflectivity for Russian Roulette */
+			float p = glm::max(col.x, glm::max(col.y, col.z));
+
+			if (depth > 5 || !p)   /* After 5 bounces or if max reflectivity is zero */
+			{
+				if (drand48() < p*0.9)            /* Russian Roulette */
+					col = col * (1.f / p);        /* Scale estimator to remain unbiased */
+				else
+					return;  /* No further bounces, only return potential emission */
+			}
+
+			switch(obj.GetMaterial().GetReflectionType())
+			{
+				case DIFF:
+				{
+					photon.position = info.hitpoint;
+					_photonMap[reinterpret_cast<size_t>(info.geometry)].push_back(photon);
+
+					photon.radiance *= info.geometry->GetMaterial().GetColor();
+					photon.direction = glm::reflect(photon.direction, info.normal);
+					photon.radiance *= 0.8f;
+					photon.depth++;
+
+					SendPhoton(scene, photon, ++depth);
+					break;
+				}
+				case SPEC:
+				{
+					photon.position = info.hitpoint;
+					_photonMap[reinterpret_cast<size_t>(info.geometry)].push_back(photon);
+
+
+					photon.radiance *= col;
+					photon.direction = glm::reflect(photon.direction, info.normal);
+					photon.depth++;
+
+					varyVector(photon.direction, glossiness);
+
+					SendPhoton(scene, photon, ++depth);
+					break;
+				}
+				case TRAN:
+				{
+					auto hitpoint = info.hitpoint;
+					auto normal = info.normal;
+					auto origDir = ray.GetDirection();
+
+
+					Ray perfectReflective(hitpoint, glm::reflect(origDir, normal));
+
+
+
+
+
+					Vector nl = normal;
+
+					/* Obtain flipped normal, if object hit from inside */
+					if (glm::dot(normal, origDir) >= 0.f)
+						nl = nl*-1.0f;
+
+					/* Otherwise object transparent, i.e. assumed dielectric glass material */
+
+					bool into = glm::dot(normal, nl) > 0;       /* Bool for checking if ray from outside going in */
+					float nc = 1.f;                        /* Index of refraction of air (approximately) */
+					float nt = 1.5f;                      /* Index of refraction of glass (approximately) */
+					float nnt;
+
+					if (into)      /* Set ratio depending on hit from inside or outside */
+						nnt = nc / nt;
+					else
+						nnt = nt / nc;
+
+					float ddn = glm::dot(origDir, nl);
+					float cos2t = 1.f - nnt * nnt * (1.f - ddn*ddn);
+
+					/* Check for total internal reflection, if so only reflect */
+					if (cos2t < 0)
+					{
+						photon.position = info.hitpoint;
+						_photonMap[reinterpret_cast<size_t>(info.geometry)].push_back(photon);
+
+
+						photon.radiance *= col;
+						photon.direction = glm::reflect(photon.direction, info.normal);
+						photon.depth++;
+
+						varyVector(photon.direction, glossiness);
+
+						SendPhoton(scene, photon, ++depth);
+						break;
+					}
+
+					/* Otherwise reflection and/or refraction occurs */
+					Vector tdir;
+
+					/* Determine transmitted ray direction for refraction */
+					if (into)
+						tdir = (origDir * nnt - normal * (ddn * nnt + sqrt(cos2t)));
+					else
+						tdir = (origDir * nnt + normal * (ddn * nnt + sqrt(cos2t)));
+
+					tdir = glm::normalize(tdir);
+
+					/* Determine R0 for Schlick´s approximation */
+					float a = nt - nc;
+					float b = nt + nc;
+					float R0 = a*a / (b*b);
+
+					/* Cosine of correct angle depending on outside/inside */
+					float c;
+					if (into)
+						c = 1 + ddn;
+					else
+						c = 1 - glm::dot(tdir, normal);
+
+					/* Compute Schlick´s approximation of Fresnel equation */
+					float Re = R0 + (1.f - R0) *c*c*c*c*c;   /* Reflectance */
+					float Tr = 1.f - Re;                     /* Transmittance */
+
+															 /* Probability for selecting reflectance or transmittance */
+					float P = .25f + .5f * Re;
+					float RP = Re / P;         /* Scaling factors for unbiased estimator */
+					float TP = Tr / (1.f - P);
+
+					//leave photon
+					photon.position = info.hitpoint;
+					_photonMap[reinterpret_cast<size_t>(info.geometry)].push_back(photon);
+
+					if (depth < 4)   /* Initially both reflection and trasmission */
+					{
+						photon.radiance *= col;
+						photon.depth++;
+
+						photon.direction = perfectReflective.GetDirection();
+						SendPhoton(scene, photon, ++depth);
+
+						photon.direction = tdir;
+						SendPhoton(scene, photon, ++depth);
+					}
+					else             /* Russian Roulette */
+					{
+						if (drand48() < P)
+						{
+							photon.radiance *= col;
+							photon.depth++;
+
+							photon.direction = perfectReflective.GetDirection();
+							SendPhoton(scene, photon, ++depth);
+							photon.radiance *= RP;
+						}
+						else
+						{
+							photon.radiance *= col;
+							photon.depth++;
+
+							photon.direction = tdir;
+							SendPhoton(scene, photon, ++depth);
+							photon.radiance *= TP;
+						}
+					}
+
+					break;
+				}
+			}
 		}
+	}
+
+	// myFunction2
+	// input:  x should be a random number between 0 and 1
+	//         glossiness should be a value between 0 and 1
+	//         small glossiness means really blurry reflection (evenly distributed randomness)
+	//         large glossiness means really sharp reflection (unevenly distributed randomness)
+	// output: a value between 0 and 1
+	float myFunction2(float x, float glossiness) const
+	{
+		if (glossiness < 0)
+			glossiness = 0;
+
+		if (glossiness >= 1.0)
+			glossiness = 1.0 - 1.0e-6;
+
+		float c = -1.0f / glm::log(glossiness);
+
+		return glm::exp(c * x - c);
+	}
+
+	void varyVector(Vector &vector, float glossiness) const
+	{
+		if (glossiness == 0.0f)
+			return;
+
+		/* Compute random reflection vector on half hemisphere */
+		float oldtheta = glm::acos(vector.z);
+		float oldphi = glm::atan(vector.y / vector.x);
+		float deltatheta = PI * (2.0f * drand48() - 1);
+		float deltaphi = (PI / 4.0f) * (2.0f * drand48() - 1.0f);
+
+		float theta = oldtheta + deltatheta;
+		float phi = oldphi + deltaphi;
+
+		/* Random reflection vector d */
+		auto d = Vector(glm::sin(theta) * glm::cos(phi),
+			glm::sin(theta) * glm::sin(phi),
+			glm::cos(theta));
+
+		vector += myFunction2(drand48(), glossiness) * d; // myFunction2 works better than myFunction1, since the vector will still point in the same general direction
+		vector = glm::normalize(vector);
 	}
 
 	using PhotonMap = std::map<size_t, std::vector<Photon>>;

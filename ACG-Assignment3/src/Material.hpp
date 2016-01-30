@@ -16,7 +16,7 @@ public:
 	Material(eReflectionType reflectionType, 
 			 const Color& color,
 			 const Color& emission,
-			 const double glossiness)
+			 const float glossiness)
 		: _emission(emission),
 		  _color(color),
 		  _refl(reflectionType),
@@ -36,7 +36,7 @@ public:
 private:
 	Color _emission, _color;
 	eReflectionType _refl;
-	double _glossiness;
+	float _glossiness;
 };
 
 #endif // Material_H

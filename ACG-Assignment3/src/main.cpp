@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
 	auto greenDiffuseMat = Material(eReflectionType::DIFF, Color(0, 1, 0), Color(0, 0, 0), 0);
 	auto whiteDiffuseMat = Material(eReflectionType::DIFF, Color(1, 1, 1), Color(0, 0, 0), 0);
 
-	auto whiteSpecularMat = Material(eReflectionType::SPEC, Color(1, 1, 1), Color(0, 0, 0), 0);
+	auto greySpecularMat = Material(eReflectionType::SPEC, Color(0.6, 0.6, 0.6), Color(0, 0, 0), 0);
 	auto greyGlossyMat = Material(eReflectionType::SPEC, Color(0.6, 0.6, 0.6), Color(0, 0, 0), 0.8f);
 	auto whiteTransMat = Material(eReflectionType::TRAN, Color(1, 1, 1)*.999f, Color(0), 0.0f);
 
@@ -53,13 +53,13 @@ int main(int argc, char* argv[])
 	scene.AddGeometry(std::make_unique<Sphere>(redDiffuseMat, Vector(75, 90, 70), 40.0f));
 
 	//front left
-	scene.AddGeometry(std::make_unique<Sphere>(whiteSpecularMat, Vector(-70, 0, 250), 60.0f));
+	scene.AddGeometry(std::make_unique<Sphere>(greySpecularMat, Vector(-70, 0, 250), 60.0f));
 
 	//front right
 	scene.AddGeometry(std::make_unique<Sphere>(whiteTransMat, Vector(75, 50, 250), 40.0f));
 
 	//light
-	scene.AddGeometry(std::make_unique<Sphere>(lightMat, Vector(0, 120, 160), 8.0f));
+	scene.AddGeometry(std::make_unique<Sphere>(lightMat, Vector(0, 190, 160), 8.0f));
 
 	auto r = 50000.0f;
 
@@ -74,8 +74,8 @@ int main(int argc, char* argv[])
 
 	auto config = RaytracerConfiguration
 	{
-		4, // subSamplesPerPixel
-		4, // unsigned int samplesPerSubSample;
+		2, // subSamplesPerPixel
+		2, // unsigned int samplesPerSubSample;
 		1, // unsigned int dofSamples;
 		1, // float apetureSize;
 	};
