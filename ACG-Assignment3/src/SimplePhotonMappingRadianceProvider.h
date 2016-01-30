@@ -8,6 +8,7 @@
 #include "Scene.hpp"
 #include "Sphere.hpp"
 #include <list>
+#include "kdtree.h"
 
 
 struct TracingInfo;
@@ -102,7 +103,15 @@ public:
 	{
 		if (_photonMap.find(reinterpret_cast<size_t>(intersectionInfo.geometry)) == _photonMap.end()) return Color(0, 0, 0);
 		
-		auto photons = _photonMap.find(reinterpret_cast<size_t>(intersectionInfo.geometry))->second;
+        struct kdres* set = kd_nearest_range3f(intersectionInfo.geometry->GetTree(), intersectionInfo.hitpoint.x, intersectionInfo.hitpoint.y, intersectionInfo.hitpoint.z, 100.0f);
+        
+        std::vector<Photon> photons;
+        while(!kd_res_end(set)) {
+            Photon* ptr = static_cast<Photon*>(kd_res_item_data(set));
+            photons.push_back(*ptr);
+            kd_res_next(set);
+        }
+        
 		for (auto& photon : photons)
 		{
 			if(glm::length2(photon.position - intersectionInfo.hitpoint) < debugEpsilon)
@@ -141,6 +150,7 @@ private:
 		{
 			photon.position = info.hitpoint;
 			_photonMap[reinterpret_cast<size_t>(info.geometry)].push_back(photon);
+            kd_insert3f(info.geometry->GetTree(), photon.position.x, photon.position.y, photon.position.z, &photon);
 
 			photon.radiance *= info.geometry->GetMaterial().GetColor();
 			photon.direction = glm::reflect(photon.direction, info.normal);
