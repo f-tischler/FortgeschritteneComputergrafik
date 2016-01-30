@@ -11,14 +11,14 @@ class LiveImage;
 
 class LiveImage
 {
-	int w;
-	int h;
+	size_t w;
+	size_t h;
 
 	std::mutex mGuard;
 	std::vector<Color> mPixels;
 
 public:
-	LiveImage(int w, int h) : w(w), h(h)
+	LiveImage(size_t w, size_t h) : w(w), h(h)
 	{
 		mPixels.resize(w*h);
 
@@ -29,7 +29,7 @@ public:
 	void show()
 	{
 		glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
-		glutInitWindowSize(w, h);
+		glutInitWindowSize(static_cast<int>(w), static_cast<int>(h));
 		glutCreateWindow("Photon-Mapper");
 		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.0, 0.0, 0.0, 1.0);
@@ -41,14 +41,14 @@ public:
 
 		{
 			std::lock_guard<std::mutex> lock(mGuard);
-			glDrawPixels(w, h, GL_RGB, GL_FLOAT, mPixels.data());
+			glDrawPixels(static_cast<int>(w), static_cast<int>(h), GL_RGB, GL_FLOAT, mPixels.data());
 		}
 		glutSwapBuffers();
 
 		glutMainLoopEvent();
 	}
 
-	void set(int x, int y, Color c)
+	void set(size_t x, size_t y, Color c)
 	{
 		std::lock_guard<std::mutex> lock(mGuard);
 		mPixels[y*w + x] = c;

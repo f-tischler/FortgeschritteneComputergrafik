@@ -77,7 +77,7 @@ public:
 			kd_res_next(set);
 		}
 
-		auto n = 0;
+		auto n = 0u;
 
 		constexpr auto maxPhotonGathered = 50;
 

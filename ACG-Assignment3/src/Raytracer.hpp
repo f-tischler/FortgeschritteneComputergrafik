@@ -17,7 +17,7 @@
 	#define _CRT_SECURE_NO_WARNINGS
 	#define _USE_MATH_DEFINES
 
-	#define drand48() (((double)rand())/((double)RAND_MAX))
+	#define drand48() (((float)rand())/((float)RAND_MAX))
 #endif
 
 
@@ -85,7 +85,7 @@ public:
 		for (auto tidx = 0ul; tidx < numThreads; tidx++)
 		{
 			const auto startX = tidx * numXperThread;
-			const auto startY = 0;
+			const auto startY = 0u;
 
 			auto endX = startX + numXperThread;
 			if (endX >= _image.GetWidth()) endX = _image.GetWidth();
@@ -401,8 +401,8 @@ private:
 		if (glossiness < 0) 
 			glossiness = 0;
 
-		if (glossiness >= 1.0) 
-			glossiness = 1.0 - 1.0e-6;
+		if (glossiness >= 1.f) 
+			glossiness = 1.f - 1.0e-6f;
 
 		float c = -1.0f / glm::log(glossiness);
 

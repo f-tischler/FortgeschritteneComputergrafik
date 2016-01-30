@@ -334,13 +334,13 @@ private:
 	// output: a value between 0 and 1
 	float myFunction2(float x, float glossiness) const
 	{
-		if (glossiness < 0)
-			glossiness = 0;
+		if (glossiness < 0.f)
+			glossiness = 0.f;
 
-		if (glossiness >= 1.0)
-			glossiness = 1.0 - 1.0e-6;
+		if (glossiness >= 1.0f)
+			glossiness = 1.0f - 1.0e-6f;
 
-		float c = -1.0f / glm::log(glossiness);
+		auto c = -1.0f / glm::log(glossiness);
 
 		return glm::exp(c * x - c);
 	}
@@ -353,7 +353,7 @@ private:
 		/* Compute random reflection vector on half hemisphere */
 		float oldtheta = glm::acos(vector.z);
 		float oldphi = glm::atan(vector.y / vector.x);
-		float deltatheta = PI * (2.0f * drand48() - 1);
+		float deltatheta = PI * (2.0f * drand48() - 1.f);
 		float deltaphi = (PI / 4.0f) * (2.0f * drand48() - 1.0f);
 
 		float theta = oldtheta + deltatheta;

@@ -31,7 +31,7 @@ public:
 	void SetEmmision(const Color& v) { _emission = v; }
 	void SetColor(const Color& v) { _color = v; }
 	void SetReflectionType(eReflectionType v) { _refl = v; }
-	void SetGlossiness(double glossiness_) { _glossiness = glossiness_; }
+	void SetGlossiness(float glossiness_) { _glossiness = glossiness_; }
 
 private:
 	Color _emission, _color;
