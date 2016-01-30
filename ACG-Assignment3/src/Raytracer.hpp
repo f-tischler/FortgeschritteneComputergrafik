@@ -389,22 +389,6 @@ private:
 		return Color();
 	}
 
-	Color BRDF()
-	{
-		
-	}
-
-
-	Ray specular(const Ray& in, const IntersectionInfo& info, float glossiness) const
-	{
-		auto reflt = glm::reflect(in.GetDirection(), info.normal);
-		varyVector(reflt, glossiness);
-		return Ray(info.hitpoint, reflt);
-	}
-	
-
-
-
 
 	// myFunction2
 	// input:  x should be a random number between 0 and 1

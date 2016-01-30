@@ -129,7 +129,7 @@ public:
 
 private:
 	static constexpr auto maxDepth = 3;
-	static constexpr auto photonCount = 1000;
+	static constexpr auto photonCount = 5000;
 	static constexpr auto debugEpsilon = 0.01f;
 
 	struct Photon
