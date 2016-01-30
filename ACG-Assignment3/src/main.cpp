@@ -17,8 +17,8 @@ int main(int argc, char* argv[])
 {
 	glutInit(&argc, argv);
 
-	constexpr auto width = 800ul;
-	constexpr auto height = 600ul;
+	constexpr auto width = 400ul;
+	constexpr auto height = 200ul;
 
 	constexpr auto roomWidth  = 400.f;
 	constexpr auto roomHeight = 300.f;
@@ -74,8 +74,8 @@ int main(int argc, char* argv[])
 
 	auto config = RaytracerConfiguration
 	{
-		4, // subSamplesPerPixel
-		4, // unsigned int samplesPerSubSample;
+		2, // subSamplesPerPixel
+		2, // unsigned int samplesPerSubSample;
 		1, // unsigned int dofSamples;
 		1, // float apetureSize;
 	};
