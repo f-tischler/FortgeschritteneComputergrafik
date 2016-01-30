@@ -50,13 +50,13 @@ int main(int argc, char* argv[])
 	scene.AddGeometry(std::make_unique<Sphere>(greyGlossyMat, Vector(-70, 45, 70), 40.0f));
 
 	//back right
-	scene.AddGeometry(std::make_unique<Sphere>(redDiffuseMat, Vector(75, 90, 70), 40.0f));
+	scene.AddGeometry(std::make_unique<Sphere>(redDiffuseMat, Vector(50, 90, 70), 40.0f));
 
 	//front left
 	scene.AddGeometry(std::make_unique<Sphere>(greySpecularMat, Vector(-70, 0, 250), 60.0f));
 
 	//front right
-	scene.AddGeometry(std::make_unique<Sphere>(whiteTransMat, Vector(75, 50, 250), 40.0f));
+	scene.AddGeometry(std::make_unique<Sphere>(whiteTransMat, Vector(75, 60, 250), 40.0f));
 
 	//light
 	scene.AddGeometry(std::make_unique<Sphere>(lightMat, Vector(0, 190, 160), 8.0f));
@@ -69,24 +69,26 @@ int main(int argc, char* argv[])
 	scene.AddGeometry(std::make_unique<Sphere>(blueDiffuseMat, Vector(r + roomWidth / 2, 0, 0), r));
 	scene.AddGeometry(std::make_unique<Sphere>(whiteDiffuseMat, Vector(0, 0, -r - roomWidth / 2), r));
 
-	auto radianceProvider = NanoFlannKdPMRP(false);
-	radianceProvider.CreatePhotonMap(scene);
-
-	auto config = RaytracerConfiguration
 	{
-		4, // subSamplesPerPixel
-		4, // unsigned int samplesPerSubSample;
-		1, // unsigned int dofSamples;
-		1, // float apetureSize;
-	};
+		auto radianceProvider = NanoFlannKdPMRP(true);
+		radianceProvider.CreatePhotonMap(scene);
 
-	auto raytracer = Raytracer<decltype(radianceProvider)>(image,	
-														   camera, 
-														   scene, 
-														   radianceProvider, 
-														   config);
+		auto config = RaytracerConfiguration
+		{
+			2, // subSamplesPerPixel
+			8, // unsigned int samplesPerSubSample;
+			1, // unsigned int dofSamples;
+			1, // float apetureSize;
+		};
 
-	raytracer.Render();
+		auto raytracer = Raytracer<decltype(radianceProvider)>(image,
+			camera,
+			scene,
+			radianceProvider,
+			config);
+
+		raytracer.Render();
+	}
 
     auto filename = "image.ppm";
 	image.Save(filename);
