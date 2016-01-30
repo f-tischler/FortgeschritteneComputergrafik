@@ -92,7 +92,7 @@ public:
 
 			auto endY = _image.GetHeight();
 
-			tasks.push_back(std::async(std::launch::deferred, [&, this, startY, startX, endY, endX, tidx]()
+			tasks.push_back(std::async(/*std::launch::deferred,*/ [&, this, startY, startX, endY, endX, tidx]()
 			{
 				for (auto y = startY; y < endY; y++)
 				{
@@ -107,7 +107,7 @@ public:
 								/* Compute radiance at subpixel using multiple samples */
 								for (auto s = 0u; s < _config.samplesPerSubSample; s++)
 								{
-									futures.push_back(std::async(std::launch::deferred, [&, this]()
+									futures.push_back(std::async(/*std::launch::deferred, */[&, this]()
 									{
 										return Sample(x, y,
 											sx, sy,
@@ -119,8 +119,6 @@ public:
 								}
 							}
 						}
-
-
 
 						_image.SetColor(x, y, Color());
 
@@ -141,15 +139,25 @@ public:
 					{
 						std::cout << "\rRendering (" << _config.subSamplesPerPixel * _config.samplesPerSubSample * _config.samplesPerSubSample << " spp) " << (100.0 * fragmentsDone / (_image.GetHeight() * _image.GetWidth())) << "%     ";
 					}
-
-					liveImage.update();
 				}
 			}));
 		}
 
-		for(auto& task : tasks)
+		auto allReady = false;
+
+		while(!allReady)
 		{
-			task.wait();
+			allReady = true;
+
+			for(auto& task : tasks)
+			{
+				if(task.wait_for(std::chrono::milliseconds(30)) != std::future_status::ready)
+				{
+					allReady = false;
+				}
+			}
+
+			liveImage.update();
 		}
 
 		/* Loop over image rows
