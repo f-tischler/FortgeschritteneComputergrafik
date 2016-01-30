@@ -226,7 +226,7 @@ public:
 
 private:
 	static constexpr auto maxDepth = 5;
-	static constexpr auto photonCount = 5000000;
+	static constexpr auto photonCount = 1000000;
 	static constexpr auto debugEpsilon = 0.05f;
 
 	float GetRandom() { return _rng(_rnd); }
@@ -242,21 +242,19 @@ private:
 
 			auto glossiness = obj.GetMaterial().GetGlossiness();
 			auto emission = obj.GetMaterial().GetEmission();
-			auto col = obj.GetMaterial().GetColor();
 
 			/* Maximum RGB reflectivity for Russian Roulette */
-			float p = glm::max(col.x, glm::max(col.y, col.z));
+			float p = glm::max(photon.radiance.x, glm::max(photon.radiance.y, photon.radiance.z));
 
 			if (depth > maxDepth || !p)   /* After 5 bounces or if max reflectivity is zero */
 			{
 				if (drand48() < p*0.9)            /* Russian Roulette */
-					col = col * (1.f / p);        /* Scale estimator to remain unbiased */
+					photon.radiance *= (1.f / p);        /* Scale estimator to remain unbiased */
 				else
 					return;  /* No further bounces, only return potential emission */
 			}
 
 			photon.position = info.hitpoint;
-			photon.radiance *= 0.8f;
 
 			if(depth >= 1)
 			{
@@ -268,20 +266,14 @@ private:
 			{
 				case DIFF:
 				{
-					photon.radiance *= info.geometry->GetMaterial().GetColor();
 					photon.direction = glm::reflect(photon.direction, info.normal);
-					photon.radiance *= 0.8f;
-
 					SendPhoton(scene, photon, ++depth);
 					break;
 				}
 				case SPEC:
 				{
-					photon.radiance *= col;
 					photon.direction = glm::reflect(photon.direction, info.normal);
-
 					varyVector(photon.direction, glossiness);
-
 					SendPhoton(scene, photon, ++depth);
 					break;
 				}
@@ -317,11 +309,8 @@ private:
 					/* Check for total internal reflection, if so only reflect */
 					if (cos2t < 0)
 					{
-						photon.radiance *= col;
 						photon.direction = glm::reflect(photon.direction, info.normal);
-
 						varyVector(photon.direction, glossiness);
-
 						SendPhoton(scene, photon, ++depth);
 						break;
 					}
@@ -360,7 +349,6 @@ private:
 
 					if (depth < maxDepth)   /* Initially both reflection and trasmission */
 					{
-						photon.radiance *= col;
 						photon.direction = perfectReflective.GetDirection();
 
 						auto newPhoton = photon;
@@ -374,7 +362,6 @@ private:
 					{
 						if (drand48() < P)
 						{
-							photon.radiance *= col;
 							photon.direction = perfectReflective.GetDirection();
 
 							SendPhoton(scene, photon, ++depth);
@@ -383,7 +370,7 @@ private:
 						}
 						else
 						{
-							photon.radiance *= col;
+
 							photon.direction = tdir;
 
 							SendPhoton(scene, photon, ++depth);
