@@ -8,7 +8,7 @@
 | specular (mirror reflection) or transparent (refraction/reflection)
 | (DIFFuse, SPECular, REFRactive, GLOSsy, TRANslucent)
 ------------------------------------------------------------------*/
-enum eReflectionType { DIFF, SPEC, REFR, GLOS, TRAN };
+enum eReflectionType { DIFF, SPEC, TRAN };
 
 class Material
 {

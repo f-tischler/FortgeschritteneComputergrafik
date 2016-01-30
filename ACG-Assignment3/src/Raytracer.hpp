@@ -141,6 +141,8 @@ public:
 					{
 						std::cout << "\rRendering (" << _config.subSamplesPerPixel * _config.samplesPerSubSample * _config.samplesPerSubSample << " spp) " << (100.0 * fragmentsDone / (_image.GetHeight() * _image.GetWidth())) << "%     ";
 					}
+
+					liveImage.update();
 				}
 			}));
 		}
@@ -249,15 +251,16 @@ private:
 
 		if (_scene.Intersect(ray, intersectionInfo))
 		{
-			auto photonRadiance = 0.0f;// _radianceProvider.GetRadiance(intersectionInfo, tracingInfo, depth);
 			auto radience = Radiance(ray, 0, 1);
-			return radience + photonRadiance;
+			return radience;
 		}
 
 
 		return _clearColor;
 	}
 
+
+	
 
 
 	Color Radiance(const Ray &ray, int depth, float E) const
@@ -278,9 +281,6 @@ private:
 
 		/* Maximum RGB reflectivity for Russian Roulette */
 		float p = glm::max(col.x,glm::max(col.y, col.z));
-
-		if(depth > 1)
-
 
 		if (depth > 5 || !p)   /* After 5 bounces or if max reflectivity is zero */
 		{
@@ -320,6 +320,8 @@ private:
 					    w * glm::sqrt(1.0f - r2);
 
 			d = glm::normalize(d);
+
+			bool shadow = true;
 
 			/* Explicit computation of direct lighting */
 			Vector e;
@@ -367,123 +369,110 @@ private:
 				if (_scene.Intersect(Ray(hitpoint, l), info) && 
 					info.geometry == _scene.GetGeometry()[i].get())
 				{
+					shadow = false;
+
 					auto omega = 2 * PI * (1 - cos_a_max);
 					e = e + col * (geom.GetMaterial().GetEmission() * glm::dot(l, nl) * omega) * 1.0f / PI;
 				}
 			}
 
-			/* Return potential light emission, direct lighting, and indirect lighting (via
-			recursive call for Monte-Carlo integration */
-
-			col *= Radiance(Ray(intersectionInfo.hitpoint, d), depth, 0);
-
-			return obj.GetMaterial().GetEmission() * E + e + col;
+			if (shadow)
+				return obj.GetMaterial().GetEmission() * E;
+		
+			return obj.GetMaterial().GetEmission() * E + _radianceProvider.GetRadiance(intersectionInfo, tracingInfo);
 		}
-		else if(obj.GetMaterial().GetReflectionType() == eReflectionType::SPEC)
+		else if(obj.GetMaterial().GetReflectionType() == SPEC)
 		{
 			auto reflt = glm::reflect(ray.GetDirection(), intersectionInfo.normal);
+			varyVector(reflt, obj.GetMaterial().GetGlossiness());
+
 			col *= Radiance(Ray(intersectionInfo.hitpoint, reflt), depth, 1);
 			return col;
 		}
-		else if (obj.GetMaterial().GetReflectionType() == GLOS)
-		{
-			auto L = ray.GetDirection();
-			auto N = intersectionInfo.normal;
-			auto L_prime = L - N * 2.0f * (glm::dot(N,L));
-
-			varyVector(L_prime, obj.GetMaterial().GetGlossiness());
-
-			col *= Radiance(Ray(intersectionInfo.hitpoint, L_prime), depth, 1);
-
-			return obj.GetMaterial().GetEmission() + col;
-		}
 		else if (obj.GetMaterial().GetReflectionType() == TRAN)
 		{
-			auto isGlossy = obj.GetMaterial().GetGlossiness() > 0.0f;
+			auto hitpoint = intersectionInfo.hitpoint;
+			auto normal = intersectionInfo.normal;
+			auto origDir = ray.GetDirection();
 
+			auto emission = obj.GetMaterial().GetEmission();
+			auto glossiness = obj.GetMaterial().GetGlossiness();
 
-			//perfectly reflection
-			auto prefectReflected = glm::reflect(ray.GetDirection(), intersectionInfo.normal);
-
-			//glossy material
-			//randomize it
-			if (isGlossy)
-				varyVector(prefectReflected, obj.GetMaterial().GetGlossiness());
-
-			Ray reflRay(intersectionInfo.hitpoint, prefectReflected);
+			Vector nl = normal;
 
 			/* Obtain flipped normal, if object hit from inside */
-			auto nl = intersectionInfo.normal;
-			if (glm::dot(intersectionInfo.normal, ray.GetDirection()) >= 0)
+			if (glm::dot(normal, origDir) >= 0.f)
 				nl = nl*-1.0f;
 
-			auto into = glm::dot(intersectionInfo.normal, nl) > 0;       /* Bool for checking if ray from outside going in */
-			auto nc = 1.f;                        /* Index of refraction of air (approximately) */
-			auto nt = 1.5f;                      /* Index of refraction of glass (approximately) */
-			auto nnt = 0.0f;
+			/* Otherwise object transparent, i.e. assumed dielectric glass material */
+			Ray reflRay(hitpoint, glm::reflect(origDir,normal));  /* Prefect reflection */
+			bool into = glm::dot(normal, nl) > 0;       /* Bool for checking if ray from outside going in */
+			float nc = 1.f;                        /* Index of refraction of air (approximately) */
+			float nt = 1.5f;                      /* Index of refraction of glass (approximately) */
+			float nnt;
 
 			if (into)      /* Set ratio depending on hit from inside or outside */
 				nnt = nc / nt;
 			else
 				nnt = nt / nc;
 
-			auto ddn = glm::dot(ray.GetDirection(), nl);
-			auto cos2t = 1.f - nnt * nnt * (1.f - ddn*ddn);
-
+			float ddn = glm::dot(origDir, nl);
+			float cos2t = 1.f - nnt * nnt * (1.f - ddn*ddn);
 
 			/* Check for total internal reflection, if so only reflect */
 			if (cos2t < 0)
-				return obj.GetMaterial().GetEmission() + col * Radiance(reflRay, depth, 1);
+				return emission + col * (Radiance(reflRay, depth, 1));
 
 			/* Otherwise reflection and/or refraction occurs */
 			Vector tdir;
 
 			/* Determine transmitted ray direction for refraction */
 			if (into)
-				tdir = glm::normalize(ray.GetDirection() * nnt - intersectionInfo.normal * (ddn * nnt + sqrt(cos2t)));
+				tdir = (origDir * nnt - normal * (ddn * nnt + sqrt(cos2t)));
 			else
-				tdir = glm::normalize(ray.GetDirection() * nnt + intersectionInfo.normal * (ddn * nnt + sqrt(cos2t)));
+				tdir = (origDir * nnt + normal * (ddn * nnt + sqrt(cos2t)));
 
-
-			//glossy material
-			//randomize it
-			if (isGlossy)
-				varyVector(tdir, obj.GetMaterial().GetGlossiness());
-
+			tdir = glm::normalize(tdir);
 
 			/* Determine R0 for Schlick´s approximation */
-			auto a = nt - nc;
-			auto b = nt + nc;
-			auto R0 = a*a / (b*b);
+			float a = nt - nc;
+			float b = nt + nc;
+			float R0 = a*a / (b*b);
 
 			/* Cosine of correct angle depending on outside/inside */
-			auto c = 0.0f;
+			float c;
 			if (into)
 				c = 1 + ddn;
 			else
-				c = 1 - glm::dot(tdir, intersectionInfo.normal);
+				c = 1 - glm::dot(tdir, normal);
 
 			/* Compute Schlick´s approximation of Fresnel equation */
-			auto Re = R0 + (1 - R0) *c*c*c*c*c;   /* Reflectance */
-			auto Tr = 1 - Re;                     /* Transmittance */
+			float Re = R0 + (1.f - R0) *c*c*c*c*c;   /* Reflectance */
+			float Tr = 1.f - Re;                     /* Transmittance */
 
-													/* Probability for selecting reflectance or transmittance */
-			auto P = .25f + .5f * Re;
-			auto RP = Re / P;         /* Scaling factors for unbiased estimator */
-			auto TP = Tr / (1 - P);
+													 /* Probability for selecting reflectance or transmittance */
+			float P = .25f + .5f * Re;
+			float RP = Re / P;         /* Scaling factors for unbiased estimator */
+			float TP = Tr / (1.f - P);
 
-			if (depth < 5)   /* Initially both reflection and trasmission */
-				return obj.GetMaterial().GetEmission() + col * 
-				(Radiance(reflRay, depth, 1) * Re + Radiance(Ray(intersectionInfo.hitpoint, tdir), depth, 1) * Tr);
+			if (depth < 3)   /* Initially both reflection and trasmission */
+				return emission + col*(Radiance(reflRay, depth, 1) * Re +
+					Radiance(Ray(hitpoint, tdir), depth, 1) * Tr);
 			else             /* Russian Roulette */
 				if (drand48() < P)
-					return obj.GetMaterial().GetEmission() + col * (Radiance(reflRay, depth, 1) * RP);
+					return emission + col*(Radiance(reflRay, depth, 1) * RP);
 				else
-					return obj.GetMaterial().GetEmission() + col * (Radiance(Ray(intersectionInfo.hitpoint, tdir), depth, 1) * TP);
+					return emission + col*(Radiance(Ray(hitpoint, tdir), depth, 1) * TP);
 		}
-
-		return col;
+		
+		assert("Unknown material");
+		return Color();
 	}
+
+	
+
+
+
 
 	// myFunction2
 	// input:  x should be a random number between 0 and 1
@@ -504,8 +493,11 @@ private:
 		return glm::exp(c * x - c);
 	}
 
-	void varyVector(Vector &vector, double glossiness) const
+	void varyVector(Vector &vector, float glossiness) const
 	{
+		if (glossiness == 0.0f)
+			return;
+
 		/* Compute random reflection vector on half hemisphere */
 		float oldtheta = glm::acos(vector.z);
 		float oldphi = glm::atan(vector.y / vector.x);

@@ -104,16 +104,6 @@ void colour(const float data, float* out) {
 #include <mutex>
 
 class LiveImage;
-std::vector<LiveImage*> images;
-
-class Renderer
-{
-	Renderer()
-	{
-
-	}
-};
-
 
 class LiveImage
 {
@@ -130,51 +120,32 @@ public:
 
 		for (size_t i = 0; i < w*h; i++)
 			mPixels[i] = Color(1.f,0.f,1.f);
-
-		images.push_back(this);
-	}
-
-	void draw()
-	{
-		std::lock_guard<std::mutex> lock(mGuard);
-		glDrawPixels(w, h, GL_RGB, GL_FLOAT, mPixels.data());
 	}
 
 	void show()
 	{
 		glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
 		glutInitWindowSize(w, h);
-		glutCreateWindow("OpenGL glDrawPixels demo");
-
-		glutDisplayFunc([]
-		{
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-			for (auto img : images)
-				img->draw();
-
-			glutSwapBuffers();
-		});
-
-
+		glutCreateWindow("Photon-Mapper");
 		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.0, 0.0, 0.0, 1.0);
 	}
 
-	void draw(Image& img)
+	void update()
 	{
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		{
+			std::lock_guard<std::mutex> lock(mGuard);
+			glDrawPixels(w, h, GL_RGB, GL_FLOAT, mPixels.data());
+		}
+		glutSwapBuffers();
+
+		glutMainLoopEvent();
 	}
 
 	void set(int x, int y, Color c)
 	{
-		static long t = 0;
-		if (t++ % 500 == 0)
-		{
-			glutMainLoopEvent();
-			glutPostRedisplay();
-		}
-
 		std::lock_guard<std::mutex> lock(mGuard);
 		mPixels[y*w + x] = c;
 	}

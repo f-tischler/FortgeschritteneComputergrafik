@@ -129,7 +129,7 @@ public:
 
 private:
 	static constexpr auto maxDepth = 3;
-	static constexpr auto photonCount = 1000;
+	static constexpr auto photonCount = 20000;
 	static constexpr auto debugEpsilon = 0.01f;
 
 	struct Photon
@@ -145,7 +145,8 @@ private:
 
 	void SendPhoton(const Scene& scene, Photon& photon, int depth = 1)
 	{
-		if (depth >= maxDepth) return;
+		if (depth >= maxDepth) 
+			return;
 
 		Ray ray(photon.position, photon.direction);
 		IntersectionInfo info;

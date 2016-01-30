@@ -18,3 +18,7 @@ ACG-Assignment2/deploy.zip
 ACG-Assignment3/vs/ACG3/x64/
 ACG-Assignment3/vs/ACG3/Release/
 ACG-Assignment3/vs/ACG3/ACG3/image_2000_photons.ppm
+ACG3/packages/
+ACG-Assignment3/vs/ACG3/packages/
+ACG-Assignment3/vs/ACG3/ACG3/x64/
+ACG-Assignment3/vs/ACG3/.nuget/packages.config
