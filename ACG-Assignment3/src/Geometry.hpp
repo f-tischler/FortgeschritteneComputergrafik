@@ -15,11 +15,9 @@ class Geometry
 {
 public:
 	explicit Geometry(const Material& material, eGeometryType type) 
-		: _material(material), _type(type), _tree(kd_create(3)) { }
+		: _type(type), _material(material) { }
 
-    ~Geometry() {
-        kd_free(_tree);
-    }
+	virtual ~Geometry() = default;
 
 	bool Intersects(const Ray& ray, Vector& normal, float& distance)
 	{
@@ -29,19 +27,18 @@ public:
 	}
 
 	const auto& GetMaterial() const { return _material; }
+	const auto& GetBoundingBox() const { return _boundingBox; }
 	auto GetType() const { return _type; }
-    struct kdtree* GetTree() { return _tree; }
 
 protected:
+	auto& GetBoundingBox() { return _boundingBox; }
 	virtual bool IntersectsGeometry(const Ray& r, Vector& normal, float& distance) = 0;
 
-	auto& GetBoundingBox() { return _boundingBox; }
 
 private:
 	eGeometryType _type;
 	Material _material;
 	BoundingBox _boundingBox;
-    struct kdtree* _tree;
 };
 
 #endif // Geometry_H
