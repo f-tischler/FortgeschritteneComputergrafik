@@ -8,7 +8,7 @@
 | specular (mirror reflection) or transparent (refraction/reflection)
 | (DIFFuse, SPECular, REFRactive, GLOSsy, TRANslucent)
 ------------------------------------------------------------------*/
-enum eReflectionType { DIFF, SPEC, REFR, GLOS, TRAN };
+enum eReflectionType { DIFF, SPEC, TRAN };
 
 class Material
 {
@@ -16,7 +16,7 @@ public:
 	Material(eReflectionType reflectionType, 
 			 const Color& color,
 			 const Color& emission,
-			 const double glossiness)
+			 const float glossiness)
 		: _emission(emission),
 		  _color(color),
 		  _refl(reflectionType),
@@ -26,16 +26,17 @@ public:
 	const auto& GetColor() const { return _color; }
 	auto GetReflectionType() const { return _refl; }
 	auto GetGlossiness() const { return _glossiness; }
+	auto HasEmission() const { return _emission != Vector(0, 0, 0); }
 
 	void SetEmmision(const Color& v) { _emission = v; }
 	void SetColor(const Color& v) { _color = v; }
 	void SetReflectionType(eReflectionType v) { _refl = v; }
-	void SetGlossiness(double glossiness_) { _glossiness = glossiness_; }
+	void SetGlossiness(float glossiness_) { _glossiness = glossiness_; }
 
 private:
 	Color _emission, _color;
 	eReflectionType _refl;
-	double _glossiness;
+	float _glossiness;
 };
 
 #endif // Material_H

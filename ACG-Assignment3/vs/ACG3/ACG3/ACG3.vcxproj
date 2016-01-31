@@ -71,15 +71,22 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <LibraryPath>$(SolutionDir)..\..\src\opengl\lib\Win32;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <LibraryPath>$(SolutionDir)..\..\src\opengl\lib\x64;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)..\..\bin\vs\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <LibraryPath>$(SolutionDir)..\..\src\opengl\lib\Win32;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)asdasdasdasdasd\vs\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <LibraryPath>$(SolutionDir)..\..\src\opengl\lib\x64;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)..\..\bin\vs\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -106,6 +113,9 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy "$(SolutionDir)..\..\src\opengl\bin\x64\freeglut.dll"  "$(TargetDir)\" /F /R /Y /I</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -133,6 +143,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -150,15 +161,19 @@
     <ClInclude Include="..\..\..\src\Common.hpp" />
     <ClInclude Include="..\..\..\src\Geometry.hpp" />
     <ClInclude Include="..\..\..\src\Image.hpp" />
+    <ClInclude Include="..\..\..\src\LiveImage.hpp" />
     <ClInclude Include="..\..\..\src\Material.hpp" />
+    <ClInclude Include="..\..\..\src\ModelLoader.hpp" />
+    <ClInclude Include="..\..\..\src\NanoFlannKdPMRP.hpp" />
     <ClInclude Include="..\..\..\src\SimplePhotonMappingRadianceProvider.h" />
     <ClInclude Include="..\..\..\src\Ray.hpp" />
     <ClInclude Include="..\..\..\src\Raytracer.hpp" />
     <ClInclude Include="..\..\..\src\Scene.hpp" />
     <ClInclude Include="..\..\..\src\SimpleRadianceProvider.hpp" />
     <ClInclude Include="..\..\..\src\Sphere.hpp" />
+    <ClInclude Include="..\..\..\src\TinyObjLoader.hpp" />
+    <ClInclude Include="..\..\..\src\TriangleMesh.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-  </ImportGroup>
+  <ImportGroup Label="ExtensionTargets" />
 </Project>
