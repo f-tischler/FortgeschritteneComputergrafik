@@ -99,8 +99,8 @@ int main(int argc, char* argv[])
 
 		auto config = RaytracerConfiguration
 		{
-			1, // subSamplesPerPixel
-			1, // unsigned int samplesPerSubSample;
+			2, // subSamplesPerPixel
+			4, // unsigned int samplesPerSubSample;
 			1, // unsigned int dofSamples;
 			1, // float apetureSize;
 		};

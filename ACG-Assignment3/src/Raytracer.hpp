@@ -303,7 +303,35 @@ private:
 
 		if (obj.GetMaterial().GetReflectionType() == DIFF)
 		{
-			return emission + _radianceProvider.GetRadiance(intersectionInfo, tracingInfo);
+			Vector nl = intersectionInfo.normal;
+
+			/* Obtain flipped normal, if object hit from inside */
+			if (glm::dot(intersectionInfo.normal, ray.GetDirection()) >= 0.f)
+				nl = nl*-1.0f;
+
+			/* Compute random reflection vector on hemisphere */
+			float r1 = 2.0f * PI * drand48();
+			float r2 = drand48();
+			float r2s = sqrt(r2);
+
+			/* Set up local orthogonal coordinate system u,v,w on surface */
+			Vector w = nl;
+			Vector u;
+
+			if (fabs(w.x) > .1f)
+				u = Vector(0.0f, 1.0f, 0.0f);
+			else
+				u = glm::normalize(glm::cross(Vector(1.0f, 0.0f, 0.0f), w));
+
+			Vector v = glm::cross(w, u);
+
+			/* Random reflection vector d */
+			Vector d = u * cos(r1) * r2s +
+				v * sin(r1) * r2s +
+				w * sqrt(1.f - r2);
+
+			return emission + (col * Radiance(Ray(intersectionInfo.hitpoint, d), depth, 0)
+								   +col*_radianceProvider.GetRadiance(intersectionInfo, tracingInfo));
 		}
 		else if(obj.GetMaterial().GetReflectionType() == SPEC)
 		{
