@@ -1,5 +1,5 @@
-#ifndef NanoFlannKdPMRP_H
-#define NanoFlannKdPMRP_H
+#ifndef PathTracingWithPhotonMappingRP_H
+#define PathTracingWithPhotonMappingRP_H
 
 #include <map>
 #include <random>
@@ -9,13 +9,14 @@
 #include "Sphere.hpp"
 #include "nanoflann.hpp"
 #include <list>
+#include "Raycaster.hpp"
 
 template<class PhotonMapType>
-class NanoFlannKdPMRP
+class PathTracingWithPhotonMappingRP
 {
 public:
-	explicit NanoFlannKdPMRP(const Scene& scene, bool debug = false)
-		: _debug(debug), _scene(scene)
+	explicit PathTracingWithPhotonMappingRP(const Scene& scene, bool debug = false, bool softShadows = false)
+		: _debug(debug), _scene(scene), _softShadows(softShadows ? 1.0f : 0.0f)
 	{ }
 
 	void CreatePhotonMap(const Scene& scene)
@@ -89,59 +90,88 @@ public:
 	}
 
 private:
-	static constexpr auto maxDepth = 5;
-	static constexpr auto photonCount = 1000000;
+	static constexpr auto minDepth = 5;
+	static constexpr auto photonCount = 40000000;
 	static constexpr auto debugEpsilon = 0.05f;
 
-	float GetRandom() { return _rng(_rnd); }
+	float GetRandom() const { static std::default_random_engine rnd; return _rng(rnd); }
 
-	void SendPhoton(const Scene& scene, typename PhotonMapType::PhotonType& photon, int depth = 1)
+	void SendPhoton(const Scene& scene, typename PhotonMapType::PhotonType photon, int depth = 1)
 	{
 		Ray ray(photon.GetPosition(), photon.GetDirection());
 		IntersectionInfo info;
 
-		if (scene.Intersect(ray, info))
+		if (!scene.Intersect(ray, info)) return;
+
+		const auto& obj = *info.geometry;
+
+		auto color = obj.GetMaterial().GetColor();
+		auto glossiness = obj.GetMaterial().GetGlossiness();
+		auto emission = obj.GetMaterial().GetEmission();
+
+		/* Maximum RGB reflectivity for Russian Roulette */
+		float p = glm::max(photon.GetRadiance().x, glm::max(photon.GetRadiance().y, photon.GetRadiance().z));
+
+		if (depth > minDepth || p < 0.0001f)   /* After 5 bounces or if max reflectivity is zero */
 		{
-			const auto& obj = *info.geometry;
+			if (drand48() < p*0.9)            /* Russian Roulette */
+				photon.SetRadiance(photon.GetRadiance() * (1.f / p));        /* Scale estimator to remain unbiased */
+			else
+				return;  /* No further bounces */
+		}
 
-			auto glossiness = obj.GetMaterial().GetGlossiness();
-			auto emission = obj.GetMaterial().GetEmission();
+		photon.SetPosition(info.hitpoint);
 
-			/* Maximum RGB reflectivity for Russian Roulette */
-			float p = glm::max(photon.GetRadiance().x, glm::max(photon.GetRadiance().y, photon.GetRadiance().z));
-
-			if (depth > maxDepth || !p)   /* After 5 bounces or if max reflectivity is zero */
-			{
-				if (drand48() < p*0.9)            /* Russian Roulette */
-					photon.SetRadiance(photon.GetRadiance() * (1.f / p));        /* Scale estimator to remain unbiased */
-				else
-					return;  /* No further bounces, only return potential emission */
-			}
-
-			photon.SetPosition(info.hitpoint);
-
-			if (depth >= 1)
-			{
-				auto& photons = _photonMap[reinterpret_cast<size_t>(info.geometry)];
-				photons.Add(photon);
-			}
-
-			switch (obj.GetMaterial().GetReflectionType())
-			{
+		switch (obj.GetMaterial().GetReflectionType())
+		{
 			case DIFF:
 			{
-				photon.SetDirection(glm::reflect(photon.GetDirection(), info.normal));
+				if (depth >= 2)
+				{
+					_photonMap[reinterpret_cast<size_t>(info.geometry)].Add(photon);
+				}
+
+				auto nl = info.normal;
+
+				/* Obtain flipped normal, if object hit from inside */
+				if (glm::dot(info.normal, info.ray.GetDirection()) >= 0.f)
+					nl = nl*-1.0f;
+
+				/* Compute random reflection vector on hemisphere */
+				auto r1 = 2.0f * PI * drand48();
+				auto r2 = drand48();
+				auto r2s = sqrt(r2);
+
+				/* Set up local orthogonal coordinate system u,v,w on surface */
+				auto w = nl;
+				Vector u;
+
+				if (fabs(w.x) > .1f)
+					u = Vector(0.0f, 1.0f, 0.0f);
+				else
+					u = glm::normalize(glm::cross(Vector(1.0f, 0.0f, 0.0f), w));
+
+				auto v = glm::cross(w, u);
+
+				/* Random reflection vector d */
+				auto d = u * cos(r1) * r2s +
+					v * sin(r1) * r2s +
+					w * sqrt(1.f - r2);
+
+				photon.SetDirection(d);
+				photon.SetRadiance(photon.GetRadiance() * color * std::max(0.0f, -glm::dot(info.normal, -photon.GetDirection())) * 0.7f);
+				
 				SendPhoton(scene, photon, depth + 1);
+
 				break;
 			}
 			case SPEC:
 			{
 				auto direction = glm::reflect(photon.GetDirection(), info.normal);
 				varyVector(direction, glossiness);
-
 				photon.SetDirection(direction);
-				SendPhoton(scene, photon, depth + 1);
 
+				SendPhoton(scene, photon, depth + 1);
 				break;
 			}
 			case TRAN:
@@ -212,22 +242,18 @@ private:
 				float Re = R0 + (1.f - R0) *c*c*c*c*c;   /* Reflectance */
 				float Tr = 1.f - Re;                     /* Transmittance */
 
-														 /* Probability for selecting reflectance or transmittance */
+															/* Probability for selecting reflectance or transmittance */
 				float P = .25f + .5f * Re;
 				float RP = Re / P;         /* Scaling factors for unbiased estimator */
 				float TP = Tr / (1.f - P);
 
-				if (depth < maxDepth)   /* Initially both reflection and trasmission */
+				if (depth <= minDepth)   /* Initially both reflection and trasmission */
 				{
 					photon.SetDirection(perfectReflective.GetDirection());
-
-					auto newPhoton = photon;
-					SendPhoton(scene, newPhoton, ++depth);
+					SendPhoton(scene, photon, depth + 1);
 
 					photon.SetDirection(tdir);
-					auto newPhoton2 = photon;
-
-					SendPhoton(scene, newPhoton2, ++depth);
+					SendPhoton(scene, photon, depth + 1);
 				}
 				else             /* Russian Roulette */
 				{
@@ -235,7 +261,7 @@ private:
 					{
 						photon.SetDirection(perfectReflective.GetDirection());
 
-						SendPhoton(scene, photon, ++depth);
+						SendPhoton(scene, photon, depth + 1);
 
 						photon.SetRadiance(photon.GetRadiance() * RP);
 					}
@@ -244,14 +270,13 @@ private:
 
 						photon.SetDirection(tdir);
 
-						SendPhoton(scene, photon, ++depth);
+						SendPhoton(scene, photon, depth + 1);
 
 						photon.SetRadiance(photon.GetRadiance() * TP);
 					}
 				}
 
 				break;
-			}
 			}
 		}
 	}
@@ -337,36 +362,47 @@ private:
 
 		if (obj.GetMaterial().GetReflectionType() == DIFF)
 		{
-			auto nl = intersectionInfo.normal;
+			Color directLighting(0, 0 ,0);
+			for(const auto& geom : _scene.GetGeometry())
+			{
+				if(geom->GetMaterial().HasEmission() && geom->GetType() == eGeometryType_Sphere)
+				{
+					auto sphere = static_cast<Sphere*>(geom.get());
 
-			/* Obtain flipped normal, if object hit from inside */
-			if (glm::dot(intersectionInfo.normal, intersectionInfo.ray.GetDirection()) >= 0.f)
-				nl = nl*-1.0f;
+					auto randomVec = glm::normalize(Vector(GetRandom(), GetRandom(), GetRandom())) * _softShadows;
+					auto origin = sphere->GetPosition() + sphere->GetRadius() * randomVec;
+					auto dir = glm::normalize(intersectionInfo.hitpoint - origin);
+					
+					Ray shadowRay(origin, dir);
 
-			/* Compute random reflection vector on hemisphere */
-			auto r1 = 2.0f * PI * drand48();
-			auto r2 = drand48();
-			auto r2s = sqrt(r2);
+					IntersectionInfo shadowInfo;
+					if(_scene.Intersect(shadowRay, shadowInfo))
+					{
+						while(shadowInfo.geometry == geom.get())
+						{
+							shadowRay = Ray(shadowInfo.hitpoint +  0.0001f * dir, dir);
+							if (!_scene.Intersect(shadowRay, shadowInfo)) break;
+						}
 
-			/* Set up local orthogonal coordinate system u,v,w on surface */
-			auto w = nl;
-			Vector u;
+						if (shadowInfo.geometry == intersectionInfo.geometry)
+						{
+							auto weight = std::max(0.0f, -glm::dot(intersectionInfo.normal, shadowRay.GetDirection()));
+							weight *= weight;
 
-			if (fabs(w.x) > .1f)
-				u = Vector(0.0f, 1.0f, 0.0f);
-			else
-				u = glm::normalize(glm::cross(Vector(1.0f, 0.0f, 0.0f), w));
+							//directly lighted
+							auto lightColor = geom->GetMaterial().GetColor();
 
-			auto v = glm::cross(w, u);
+							directLighting += col * glm::clamp(geom->GetMaterial().GetEmission(), Color(0, 0, 0), Color(1, 1, 1)) * weight;
+						}
+					}
+				}
+			}
 
-			/* Random reflection vector d */
-			auto d = u * cos(r1) * r2s +
-				v * sin(r1) * r2s +
-				w * sqrt(1.f - r2);
+			auto indirectLighting = col * GetPhotonMapRadianceEstimate(intersectionInfo);
 
-			return emission + col * GetPhotonMapRadianceEstimate(intersectionInfo);
+			return emission + directLighting + indirectLighting;
 		}
-		
+
 		if (obj.GetMaterial().GetReflectionType() == SPEC)
 		{
 			auto reflt = glm::reflect(intersectionInfo.ray.GetDirection(), intersectionInfo.normal);
@@ -374,7 +410,7 @@ private:
 
 			return emission + col * Radiance(Ray(intersectionInfo.hitpoint, reflt), depth, 1);
 		}
-		
+
 		if (obj.GetMaterial().GetReflectionType() == TRAN)
 		{
 			auto hitpoint = intersectionInfo.hitpoint;
@@ -437,7 +473,7 @@ private:
 			auto Re = R0 + (1.f - R0) *c*c*c*c*c;   /* Reflectance */
 			auto Tr = 1.f - Re;                     /* Transmittance */
 
-			/* Probability for selecting reflectance or transmittance */
+													/* Probability for selecting reflectance or transmittance */
 			auto P = .25f + .5f * Re;
 			auto RP = Re / P;         /* Scaling factors for unbiased estimator */
 			auto TP = Tr / (1.f - P);
@@ -445,7 +481,7 @@ private:
 			if (depth < 3)   /* Initially both reflection and trasmission */
 			{
 				return emission + col*(Radiance(perfectReflective, depth, 1) * Re +
-					   Radiance(Ray(hitpoint, tdir), depth, 1) * Tr);
+					Radiance(Ray(hitpoint, tdir), depth, 1) * Tr);
 			}
 
 			/* Russian Roulette */
@@ -506,11 +542,12 @@ private:
 
 	std::map<size_t, PhotonMapType> _photonMap;
 
-	std::default_random_engine _rnd;
+	
 	std::uniform_real_distribution<float> _rng = std::uniform_real_distribution<float>(-1.0f, 1.0f);
 	bool _debug;
 	const Scene& _scene;
+	float _softShadows;
 };
 
-#endif // NanoFlannKdPMRP_H
+#endif // PathTracingWithPhotonMappingRP
 

@@ -165,9 +165,11 @@
     <ClInclude Include="..\..\..\src\Material.hpp" />
     <ClInclude Include="..\..\..\src\ModelLoader.hpp" />
     <ClInclude Include="..\..\..\src\NanoFlannKdPMRP.hpp" />
+    <ClInclude Include="..\..\..\src\PathTracingWithPhotonMappingRP.hpp" />
+    <ClInclude Include="..\..\..\src\NanoFlannPhotonMap.h" />
     <ClInclude Include="..\..\..\src\SimplePhotonMappingRadianceProvider.h" />
     <ClInclude Include="..\..\..\src\Ray.hpp" />
-    <ClInclude Include="..\..\..\src\Raytracer.hpp" />
+    <ClInclude Include="..\..\..\src\Raycaster.hpp" />
     <ClInclude Include="..\..\..\src\Scene.hpp" />
     <ClInclude Include="..\..\..\src\SimpleRadianceProvider.hpp" />
     <ClInclude Include="..\..\..\src\Sphere.hpp" />

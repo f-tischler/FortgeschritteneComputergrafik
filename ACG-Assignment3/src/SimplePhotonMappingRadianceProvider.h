@@ -10,8 +10,7 @@
 #include "Sphere.hpp"
 #include <list>
 
-
-struct TracingInfo;
+class TracingInfo;
 
 class SimplePhotonMappingRadianceProvider
 {
