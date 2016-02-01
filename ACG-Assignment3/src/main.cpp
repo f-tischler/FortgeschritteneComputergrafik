@@ -20,14 +20,14 @@ int main(int argc, char* argv[])
 {
 	glutInit(&argc, argv);
 
-	constexpr auto width = 1024ul;
-	constexpr auto height = 768ul;
+	constexpr auto width = 2000ul;
+	constexpr auto height = 1500ul;
 
 	constexpr auto roomWidth  = 400.f;
 	constexpr auto roomHeight = 300.f;
 
 	const auto camPos = Vector(0, 130.0, 500);
-	const auto lookAt = Vector(0, 140, 0);
+	const auto lookAt = Vector(0, 145, 190);
 	constexpr auto fov = 80.0f / 180.0f * PI;
 
 	constexpr auto lightPower = 1000000.f;
@@ -103,9 +103,9 @@ int main(int argc, char* argv[])
 		auto config = RaycasterConfiguration
 		{
 			2, // subSamplesPerPixel
-			32, // unsigned int samplesPerSubSample;
+			40, // unsigned int samplesPerSubSample;
 			1, // unsigned int dofSamples;
-			2, // float apetureSize;
+			4, // float apetureSize;
 		};
 
 		auto raycaster = Raycaster<decltype(radianceProvider)>(image, camera, radianceProvider, config);

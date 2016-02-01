@@ -90,8 +90,9 @@ public:
 	}
 
 private:
-	static constexpr auto minDepth = 5;
-	static constexpr auto photonCount = 40000000;
+	static constexpr auto gatherCount = 500;
+	static constexpr auto minDepth = 4;
+	static constexpr auto photonCount = 60000000;
 	static constexpr auto debugEpsilon = 0.05f;
 
 	float GetRandom() const { static std::default_random_engine rnd; return _rng(rnd); }
@@ -314,7 +315,7 @@ private:
 
 		auto color = Color(0, 0, 0);
 
-		auto neighbours = it->second.GetNeighbours(intersectionInfo.hitpoint, 200);
+		auto neighbours = it->second.GetNeighbours(intersectionInfo.hitpoint, gatherCount);
 
 		float worstDistance = glm::sqrt(neighbours.GetWorstDistanceSq());
 		float k = 1;
@@ -542,7 +543,6 @@ private:
 
 	std::map<size_t, PhotonMapType> _photonMap;
 
-	
 	std::uniform_real_distribution<float> _rng = std::uniform_real_distribution<float>(-1.0f, 1.0f);
 	bool _debug;
 	const Scene& _scene;
