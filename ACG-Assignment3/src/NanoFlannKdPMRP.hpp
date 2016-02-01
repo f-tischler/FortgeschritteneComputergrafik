@@ -10,100 +10,13 @@
 #include "nanoflann.hpp"
 #include <list>
 
-struct TracingInfo;
-
-struct Photon
-{
-	Color radiance;
-	Vector position;
-	Vector direction;
-};
-
-struct NeighbourSet
-{
-	std::vector<size_t> indices;
-	std::vector<float> distances;
-	float worstDistance;
-};
-
-class Photons
-{
-public:
-	Photons() : _data(0), _index(3, *this, nanoflann::KDTreeSingleIndexAdaptorParams(10)) { }
-
-	size_t kdtree_get_point_count() const { return _data.size(); }
-
-	auto kdtree_distance(const float* p1, const size_t idx_p2, size_t) const
-	{
-		const auto d0 = p1[0] - _data[idx_p2].position.x;
-		const auto d1 = p1[1] - _data[idx_p2].position.y;
-		const auto d2 = p1[2] - _data[idx_p2].position.z;
-		return d0*d0 + d1*d1 + d2*d2;
-	}
-
-	auto kdtree_get_pt(const size_t idx, int dim) const
-	{
-		if (dim == 0) return _data[idx].position.x;
-		if (dim == 1) return _data[idx].position.y;
-
-		return _data[idx].position.z;
-	}
-
-	template <class BBOX>
-	bool kdtree_get_bbox(BBOX& /* bb */) const { return false; }
-
-	void Add(const Photon& photon)
-	{
-		std::lock_guard<std::mutex> lock(_dataMtx);
-		_data.push_back(photon);
-	}
-
-	auto GetNeighbours(const Vector& pos, const size_t n) const
-	{
-		const float query_pt[3] = { pos.x, pos.y, pos.z };
-		const auto num_results = n;
-
-		NeighbourSet set;
-		set.indices = std::vector<size_t>(n, -1);
-		set.distances = std::vector<float>(n, -1);
-
-		nanoflann::KNNResultSet<float> resultSet(num_results);
-
-		resultSet.init(set.indices.data(), set.distances.data());
-		_index.findNeighbors(resultSet, &query_pt[0], nanoflann::SearchParams(10));
-
-		set.worstDistance = resultSet.worstDist();
-
-		return set;
-	}
-
-	const auto& GetPhotons() const { return _data; }
-
-	void BuildIndex()
-	{
-		if(!_data.empty())
-			_index.buildIndex();
-	}
-
-	bool Empty() const { return _data.empty(); }
-
-private:
-	using MyKdTreeType = 
-		nanoflann::KDTreeSingleIndexAdaptor<
-		nanoflann::L2_Simple_Adaptor<float, Photons>,
-		Photons,
-		3>;
-
-	std::vector<Photon> _data;
-	MyKdTreeType _index;
-	std::mutex _dataMtx;
-};
-
+template<class PhotonMapType>
 class NanoFlannKdPMRP
 {
 public:
-	explicit NanoFlannKdPMRP(bool debug = false)
-		: _debug(debug) { }
+	explicit NanoFlannKdPMRP(const Scene& scene, bool debug = false)
+		: _debug(debug), _scene(scene)
+	{ }
 
 	void CreatePhotonMap(const Scene& scene)
 	{
@@ -114,28 +27,27 @@ public:
 
 		std::list<std::future<void>> tasks;
 		auto threads = std::thread::hardware_concurrency();
-		
+
 		for (auto& object : objects)
 		{
 			const auto& material = object->GetMaterial();
-
 			const auto& emission = material.GetEmission();
 
 			if (object->GetType() == eGeometryType_Sphere &&
 				material.GetEmission() != Vector(0, 0, 0))
 			{
 				for (auto t = 0ul; t < threads; t++)
-				{						
+				{
 					tasks.push_back(std::async([&]
 					{
 						for (auto i = 0ul; i < photonCount / threads; i++)
 						{
 							const auto sphere = static_cast<Sphere*>(object.get());
 
-							Photon photon;
-							photon.radiance = material.GetEmission() / static_cast<float>(photonCount);
-							photon.direction = glm::normalize(Vector(GetRandom(), GetRandom(), GetRandom()));
-							photon.position = sphere->GetPosition() + photon.direction * (sphere->GetRadius() + 0.00001f);
+							typename PhotonMapType::PhotonType photon;
+							photon.SetRadiance(emission / static_cast<float>(photonCount));
+							photon.SetDirection(glm::normalize(Vector(GetRandom(), GetRandom(), GetRandom())));
+							photon.SetPosition(sphere->GetPosition() + photon.GetDirection() * (sphere->GetRadius() + 0.00001f));
 
 							SendPhoton(scene, photon);
 						}
@@ -149,14 +61,14 @@ public:
 			}
 		}
 
-		for(auto& p : _photonMap)
+		for (auto& p : _photonMap)
 		{
 			tasks.push_back(std::async([&]()
 			{
 				p.second.BuildIndex();
 			}));
 
-			if(tasks.size() >= threads*2)
+			if (tasks.size() >= threads * 2)
 			{
 				for (auto& t : tasks)
 					t.wait();
@@ -165,47 +77,186 @@ public:
 			}
 		}
 
-		for(auto& task : tasks)
+		for (auto& task : tasks)
 		{
 			task.wait();
 		}
 	}
 
-	Color GetRadiance(const IntersectionInfo& intersectionInfo, TracingInfo& tracingInfo) const
+	Color GetRadiance(const Ray& ray) const
 	{
-		if (_debug) return DisplayPhoton(intersectionInfo, tracingInfo);
-
-		if (intersectionInfo.geometry->GetMaterial().GetEmission() != Vector(0, 0, 0))
-			return intersectionInfo.geometry->GetMaterial().GetEmission();
-
-		auto it = _photonMap.find(reinterpret_cast<size_t>(intersectionInfo.geometry));
-		if (it == _photonMap.end()) return Color(0, 0, 0);
-
-		if (it->second.Empty()) return Color(0, 0, 0);
-
-		auto color = Color(0, 0, 0);
-		
-		auto neighbours = it->second.GetNeighbours(intersectionInfo.hitpoint, 200);
-
-		float worstDistance = glm::sqrt(neighbours.worstDistance);
-		float k = 1;
-
-		auto normalizationCoeff = 1 - 2 / (3 * k);
-
-		for (auto& idx : neighbours.indices)
-		{
-			if (idx < 0) continue;
-
-			auto& photon = it->second.GetPhotons()[idx];
-			auto weight = std::max(0.0f, -glm::dot(intersectionInfo.normal, photon.direction));
-			weight *= 1 - glm::length(intersectionInfo.hitpoint - photon.position) / (worstDistance * k);/// exposure;
-			color += photon.radiance * weight;
-		}
-
-		return color / (neighbours.worstDistance * PI * normalizationCoeff) * intersectionInfo.geometry->GetMaterial().GetColor();
+		return Radiance(ray, 0, 1);
 	}
 
-	Color DisplayPhoton(const IntersectionInfo& intersectionInfo, TracingInfo& tracingInfo) const
+private:
+	static constexpr auto maxDepth = 5;
+	static constexpr auto photonCount = 1000000;
+	static constexpr auto debugEpsilon = 0.05f;
+
+	float GetRandom() { return _rng(_rnd); }
+
+	void SendPhoton(const Scene& scene, typename PhotonMapType::PhotonType& photon, int depth = 1)
+	{
+		Ray ray(photon.GetPosition(), photon.GetDirection());
+		IntersectionInfo info;
+
+		if (scene.Intersect(ray, info))
+		{
+			const auto& obj = *info.geometry;
+
+			auto glossiness = obj.GetMaterial().GetGlossiness();
+			auto emission = obj.GetMaterial().GetEmission();
+
+			/* Maximum RGB reflectivity for Russian Roulette */
+			float p = glm::max(photon.GetRadiance().x, glm::max(photon.GetRadiance().y, photon.GetRadiance().z));
+
+			if (depth > maxDepth || !p)   /* After 5 bounces or if max reflectivity is zero */
+			{
+				if (drand48() < p*0.9)            /* Russian Roulette */
+					photon.SetRadiance(photon.GetRadiance() * (1.f / p));        /* Scale estimator to remain unbiased */
+				else
+					return;  /* No further bounces, only return potential emission */
+			}
+
+			photon.SetPosition(info.hitpoint);
+
+			if (depth >= 1)
+			{
+				auto& photons = _photonMap[reinterpret_cast<size_t>(info.geometry)];
+				photons.Add(photon);
+			}
+
+			switch (obj.GetMaterial().GetReflectionType())
+			{
+			case DIFF:
+			{
+				photon.SetDirection(glm::reflect(photon.GetDirection(), info.normal));
+				SendPhoton(scene, photon, depth + 1);
+				break;
+			}
+			case SPEC:
+			{
+				auto direction = glm::reflect(photon.GetDirection(), info.normal);
+				varyVector(direction, glossiness);
+
+				photon.SetDirection(direction);
+				SendPhoton(scene, photon, depth + 1);
+
+				break;
+			}
+			case TRAN:
+			{
+				auto hitpoint = info.hitpoint;
+				auto normal = info.normal;
+				auto origDir = ray.GetDirection();
+
+				Ray perfectReflective(hitpoint, glm::reflect(origDir, normal));
+
+				Vector nl = normal;
+
+				/* Obtain flipped normal, if object hit from inside */
+				if (glm::dot(normal, origDir) >= 0.f)
+					nl = nl*-1.0f;
+
+				/* Otherwise object transparent, i.e. assumed dielectric glass material */
+
+				bool into = glm::dot(normal, nl) > 0;       /* Bool for checking if ray from outside going in */
+				float nc = 1.f;                        /* Index of refraction of air (approximately) */
+				float nt = 1.5f;                      /* Index of refraction of glass (approximately) */
+				float nnt;
+
+				if (into)      /* Set ratio depending on hit from inside or outside */
+					nnt = nc / nt;
+				else
+					nnt = nt / nc;
+
+				float ddn = glm::dot(origDir, nl);
+				float cos2t = 1.f - nnt * nnt * (1.f - ddn*ddn);
+
+				/* Check for total internal reflection, if so only reflect */
+				if (cos2t < 0)
+				{
+					auto direction = glm::reflect(photon.GetDirection(), info.normal);
+					varyVector(direction, glossiness);
+
+					photon.SetDirection(direction);
+					SendPhoton(scene, photon, depth + 1);
+
+					break;
+				}
+
+				/* Otherwise reflection and/or refraction occurs */
+				Vector tdir;
+
+				/* Determine transmitted ray direction for refraction */
+				if (into)
+					tdir = (origDir * nnt - normal * (ddn * nnt + sqrt(cos2t)));
+				else
+					tdir = (origDir * nnt + normal * (ddn * nnt + sqrt(cos2t)));
+
+				tdir = glm::normalize(tdir);
+
+				/* Determine R0 for Schlick큦 approximation */
+				float a = nt - nc;
+				float b = nt + nc;
+				float R0 = a*a / (b*b);
+
+				/* Cosine of correct angle depending on outside/inside */
+				float c;
+				if (into)
+					c = 1 + ddn;
+				else
+					c = 1 - glm::dot(tdir, normal);
+
+				/* Compute Schlick큦 approximation of Fresnel equation */
+				float Re = R0 + (1.f - R0) *c*c*c*c*c;   /* Reflectance */
+				float Tr = 1.f - Re;                     /* Transmittance */
+
+														 /* Probability for selecting reflectance or transmittance */
+				float P = .25f + .5f * Re;
+				float RP = Re / P;         /* Scaling factors for unbiased estimator */
+				float TP = Tr / (1.f - P);
+
+				if (depth < maxDepth)   /* Initially both reflection and trasmission */
+				{
+					photon.SetDirection(perfectReflective.GetDirection());
+
+					auto newPhoton = photon;
+					SendPhoton(scene, newPhoton, ++depth);
+
+					photon.SetDirection(tdir);
+					auto newPhoton2 = photon;
+
+					SendPhoton(scene, newPhoton2, ++depth);
+				}
+				else             /* Russian Roulette */
+				{
+					if (drand48() < P)
+					{
+						photon.SetDirection(perfectReflective.GetDirection());
+
+						SendPhoton(scene, photon, ++depth);
+
+						photon.SetRadiance(photon.GetRadiance() * RP);
+					}
+					else
+					{
+
+						photon.SetDirection(tdir);
+
+						SendPhoton(scene, photon, ++depth);
+
+						photon.SetRadiance(photon.GetRadiance() * TP);
+					}
+				}
+
+				break;
+			}
+			}
+		}
+	}
+
+	Color DisplayPhoton(const IntersectionInfo& intersectionInfo) const
 	{
 		if (intersectionInfo.geometry->GetMaterial().GetEmission() != Vector(0, 0, 0))
 			return intersectionInfo.geometry->GetMaterial().GetEmission();
@@ -218,171 +269,197 @@ public:
 		auto color = Color(0, 0, 0);
 
 		auto neighbour = it->second.GetNeighbours(intersectionInfo.hitpoint, 1);
-		if (neighbour.worstDistance < debugEpsilon && neighbour.indices[0] >= 0)
-			return it->second.GetPhotons()[neighbour.indices[0]].radiance;
+		if (neighbour.GetWorstDistanceSq() < debugEpsilon && neighbour.GetIndices()[0] >= 0)
+			return it->second.GetPhotons()[neighbour.GetIndices()[0]].GetRadiance();
 
 		return Color(0, 0, 0);
 	}
 
-private:
-	static constexpr auto maxDepth = 5;
-	static constexpr auto photonCount = 1000000;
-	static constexpr auto debugEpsilon = 0.05f;
-
-	float GetRandom() { return _rng(_rnd); }
-
-	void SendPhoton(const Scene& scene, Photon& photon, int depth = 1)
+	Color GetPhotonMapRadianceEstimate(const IntersectionInfo& intersectionInfo) const
 	{
-		Ray ray(photon.position, photon.direction);
-		IntersectionInfo info;
+		if (_debug) return DisplayPhoton(intersectionInfo);
 
-		if (scene.Intersect(ray, info))
+		if (intersectionInfo.geometry->GetMaterial().GetEmission() != Vector(0, 0, 0))
+			return intersectionInfo.geometry->GetMaterial().GetEmission();
+
+		auto it = _photonMap.find(reinterpret_cast<size_t>(intersectionInfo.geometry));
+		if (it == _photonMap.end()) return Color(0, 0, 0);
+
+		if (it->second.Empty()) return Color(0, 0, 0);
+
+		auto color = Color(0, 0, 0);
+
+		auto neighbours = it->second.GetNeighbours(intersectionInfo.hitpoint, 200);
+
+		float worstDistance = glm::sqrt(neighbours.GetWorstDistanceSq());
+		float k = 1;
+
+		auto normalizationCoeff = 1 - 2 / (3 * k);
+
+		for (auto& idx : neighbours.GetIndices())
 		{
-			const auto& obj = *info.geometry;
+			if (idx < 0) continue;
 
-			auto glossiness = obj.GetMaterial().GetGlossiness();
-			auto emission = obj.GetMaterial().GetEmission();
+			auto& photon = it->second.GetPhotons()[idx];
+			auto weight = std::max(0.0f, -glm::dot(intersectionInfo.normal, photon.GetDirection()));
+			weight *= 1 - glm::length(intersectionInfo.hitpoint - photon.GetPosition()) / (worstDistance * k);/// exposure;
+			color += photon.GetRadiance() * weight;
+		}
 
-			/* Maximum RGB reflectivity for Russian Roulette */
-			float p = glm::max(photon.radiance.x, glm::max(photon.radiance.y, photon.radiance.z));
+		return color / (neighbours.GetWorstDistanceSq() * PI * normalizationCoeff);
+	}
 
-			if (depth > maxDepth || !p)   /* After 5 bounces or if max reflectivity is zero */
+	Color Radiance(const Ray& ray, int depth, float E) const
+	{
+		depth++;
+
+		IntersectionInfo intersectionInfo;
+		if (!_scene.Intersect(ray, intersectionInfo)) return Color(0, 0, 0);
+
+		const auto &obj = *intersectionInfo.geometry;
+
+		auto glossiness = obj.GetMaterial().GetGlossiness();
+		auto emission = obj.GetMaterial().GetEmission() * E;
+		auto col = obj.GetMaterial().GetColor();
+
+		/* Maximum RGB reflectivity for Russian Roulette */
+		float p = glm::max(col.x, glm::max(col.y, col.z));
+
+		if (depth > 5 || !p)   /* After 5 bounces or if max reflectivity is zero */
+		{
+			if (drand48() < p*0.9)            /* Russian Roulette */
+				col = col * (1.0f / p);        /* Scale estimator to remain unbiased */
+			else
 			{
-				if (drand48() < p*0.9)            /* Russian Roulette */
-					photon.radiance *= (1.f / p);        /* Scale estimator to remain unbiased */
-				else
-					return;  /* No further bounces, only return potential emission */
-			}
-
-			photon.position = info.hitpoint;
-
-			if(depth >= 1)
-			{
-				auto& photons = _photonMap[reinterpret_cast<size_t>(info.geometry)];
-				photons.Add(photon);
-			}
-
-			switch (obj.GetMaterial().GetReflectionType())
-			{
-				case DIFF:
-				{
-					photon.direction = glm::reflect(photon.direction, info.normal);
-					SendPhoton(scene, photon, ++depth);
-					break;
-				}
-				case SPEC:
-				{
-					photon.direction = glm::reflect(photon.direction, info.normal);
-					varyVector(photon.direction, glossiness);
-					SendPhoton(scene, photon, ++depth);
-					break;
-				}
-				case TRAN:
-				{
-					auto hitpoint = info.hitpoint;
-					auto normal = info.normal;
-					auto origDir = ray.GetDirection();
-
-					Ray perfectReflective(hitpoint, glm::reflect(origDir, normal));
-
-					Vector nl = normal;
-
-					/* Obtain flipped normal, if object hit from inside */
-					if (glm::dot(normal, origDir) >= 0.f)
-						nl = nl*-1.0f;
-
-					/* Otherwise object transparent, i.e. assumed dielectric glass material */
-
-					bool into = glm::dot(normal, nl) > 0;       /* Bool for checking if ray from outside going in */
-					float nc = 1.f;                        /* Index of refraction of air (approximately) */
-					float nt = 1.5f;                      /* Index of refraction of glass (approximately) */
-					float nnt;
-
-					if (into)      /* Set ratio depending on hit from inside or outside */
-						nnt = nc / nt;
-					else
-						nnt = nt / nc;
-
-					float ddn = glm::dot(origDir, nl);
-					float cos2t = 1.f - nnt * nnt * (1.f - ddn*ddn);
-
-					/* Check for total internal reflection, if so only reflect */
-					if (cos2t < 0)
-					{
-						photon.direction = glm::reflect(photon.direction, info.normal);
-						varyVector(photon.direction, glossiness);
-						SendPhoton(scene, photon, ++depth);
-						break;
-					}
-
-					/* Otherwise reflection and/or refraction occurs */
-					Vector tdir;
-
-					/* Determine transmitted ray direction for refraction */
-					if (into)
-						tdir = (origDir * nnt - normal * (ddn * nnt + sqrt(cos2t)));
-					else
-						tdir = (origDir * nnt + normal * (ddn * nnt + sqrt(cos2t)));
-
-					tdir = glm::normalize(tdir);
-
-					/* Determine R0 for Schlick큦 approximation */
-					float a = nt - nc;
-					float b = nt + nc;
-					float R0 = a*a / (b*b);
-
-					/* Cosine of correct angle depending on outside/inside */
-					float c;
-					if (into)
-						c = 1 + ddn;
-					else
-						c = 1 - glm::dot(tdir, normal);
-
-					/* Compute Schlick큦 approximation of Fresnel equation */
-					float Re = R0 + (1.f - R0) *c*c*c*c*c;   /* Reflectance */
-					float Tr = 1.f - Re;                     /* Transmittance */
-
-															 /* Probability for selecting reflectance or transmittance */
-					float P = .25f + .5f * Re;
-					float RP = Re / P;         /* Scaling factors for unbiased estimator */
-					float TP = Tr / (1.f - P);
-
-					if (depth < maxDepth)   /* Initially both reflection and trasmission */
-					{
-						photon.direction = perfectReflective.GetDirection();
-
-						auto newPhoton = photon;
-						SendPhoton(scene, newPhoton, ++depth);
-
-						photon.direction = tdir;
-						auto newPhoton2 = photon;
-						SendPhoton(scene, newPhoton2, ++depth);
-					}
-					else             /* Russian Roulette */
-					{
-						if (drand48() < P)
-						{
-							photon.direction = perfectReflective.GetDirection();
-
-							SendPhoton(scene, photon, ++depth);
-
-							photon.radiance *= RP;
-						}
-						else
-						{
-
-							photon.direction = tdir;
-
-							SendPhoton(scene, photon, ++depth);
-
-							photon.radiance *= TP;
-						}
-					}
-
-					break;
-				}
+				return emission;  /* No further bounces, only return potential emission */
 			}
 		}
+
+		if (obj.GetMaterial().GetReflectionType() == DIFF)
+		{
+			auto nl = intersectionInfo.normal;
+
+			/* Obtain flipped normal, if object hit from inside */
+			if (glm::dot(intersectionInfo.normal, intersectionInfo.ray.GetDirection()) >= 0.f)
+				nl = nl*-1.0f;
+
+			/* Compute random reflection vector on hemisphere */
+			auto r1 = 2.0f * PI * drand48();
+			auto r2 = drand48();
+			auto r2s = sqrt(r2);
+
+			/* Set up local orthogonal coordinate system u,v,w on surface */
+			auto w = nl;
+			Vector u;
+
+			if (fabs(w.x) > .1f)
+				u = Vector(0.0f, 1.0f, 0.0f);
+			else
+				u = glm::normalize(glm::cross(Vector(1.0f, 0.0f, 0.0f), w));
+
+			auto v = glm::cross(w, u);
+
+			/* Random reflection vector d */
+			auto d = u * cos(r1) * r2s +
+				v * sin(r1) * r2s +
+				w * sqrt(1.f - r2);
+
+			return emission + col * GetPhotonMapRadianceEstimate(intersectionInfo);
+		}
+		
+		if (obj.GetMaterial().GetReflectionType() == SPEC)
+		{
+			auto reflt = glm::reflect(intersectionInfo.ray.GetDirection(), intersectionInfo.normal);
+			varyVector(reflt, glossiness);
+
+			return emission + col * Radiance(Ray(intersectionInfo.hitpoint, reflt), depth, 1);
+		}
+		
+		if (obj.GetMaterial().GetReflectionType() == TRAN)
+		{
+			auto hitpoint = intersectionInfo.hitpoint;
+			auto normal = intersectionInfo.normal;
+			auto origDir = intersectionInfo.ray.GetDirection();
+
+			Ray perfectReflective(hitpoint, glm::reflect(origDir, normal));
+
+			auto nl = normal;
+
+			/* Obtain flipped normal, if object hit from inside */
+			if (glm::dot(normal, origDir) >= 0.f)
+				nl = nl*-1.0f;
+
+			/* Otherwise object transparent, i.e. assumed dielectric glass material */
+
+			auto into = glm::dot(normal, nl) > 0;       /* Bool for checking if ray from outside going in */
+			auto nc = 1.f;                        /* Index of refraction of air (approximately) */
+			auto nt = 1.5f;                      /* Index of refraction of glass (approximately) */
+			float nnt;
+
+			if (into)      /* Set ratio depending on hit from inside or outside */
+				nnt = nc / nt;
+			else
+				nnt = nt / nc;
+
+			auto ddn = glm::dot(origDir, nl);
+			auto cos2t = 1.f - nnt * nnt * (1.f - ddn*ddn);
+
+			/* Check for total internal reflection, if so only reflect */
+			if (cos2t < 0)
+			{
+				return emission + col * (Radiance(perfectReflective, depth, 1));
+			}
+
+			/* Otherwise reflection and/or refraction occurs */
+			Vector tdir;
+
+			/* Determine transmitted ray direction for refraction */
+			if (into)
+				tdir = (origDir * nnt - normal * (ddn * nnt + sqrt(cos2t)));
+			else
+				tdir = (origDir * nnt + normal * (ddn * nnt + sqrt(cos2t)));
+
+			tdir = glm::normalize(tdir);
+
+			/* Determine R0 for Schlick큦 approximation */
+			auto a = nt - nc;
+			auto b = nt + nc;
+			auto R0 = a*a / (b*b);
+
+			/* Cosine of correct angle depending on outside/inside */
+			float c;
+			if (into)
+				c = 1 + ddn;
+			else
+				c = 1 - glm::dot(tdir, normal);
+
+			/* Compute Schlick큦 approximation of Fresnel equation */
+			auto Re = R0 + (1.f - R0) *c*c*c*c*c;   /* Reflectance */
+			auto Tr = 1.f - Re;                     /* Transmittance */
+
+			/* Probability for selecting reflectance or transmittance */
+			auto P = .25f + .5f * Re;
+			auto RP = Re / P;         /* Scaling factors for unbiased estimator */
+			auto TP = Tr / (1.f - P);
+
+			if (depth < 3)   /* Initially both reflection and trasmission */
+			{
+				return emission + col*(Radiance(perfectReflective, depth, 1) * Re +
+					   Radiance(Ray(hitpoint, tdir), depth, 1) * Tr);
+			}
+
+			/* Russian Roulette */
+			if (drand48() < P)
+			{
+				return emission + col*(Radiance(perfectReflective, depth, 1) * RP);
+			}
+
+			return emission + col*(Radiance(Ray(hitpoint, tdir), depth, 1) * TP);
+		}
+
+		assert("Unknown material");
+
+		return Color(0, 0, 0);
 	}
 
 	// myFunction2
@@ -427,15 +504,12 @@ private:
 		vector = glm::normalize(vector);
 	}
 
-
-	using PhotonMap = std::map<size_t, Photons>;
-	PhotonMap _photonMap;
-
-	std::vector<Photon> _data;
+	std::map<size_t, PhotonMapType> _photonMap;
 
 	std::default_random_engine _rnd;
 	std::uniform_real_distribution<float> _rng = std::uniform_real_distribution<float>(-1.0f, 1.0f);
 	bool _debug;
+	const Scene& _scene;
 };
 
 #endif // NanoFlannKdPMRP_H

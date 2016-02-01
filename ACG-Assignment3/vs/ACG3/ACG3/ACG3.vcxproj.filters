@@ -19,9 +19,6 @@
     <ClInclude Include="..\..\..\src\Image.hpp">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\Raytracer.hpp">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\Camera.hpp">
       <Filter>src</Filter>
     </ClInclude>
@@ -65,6 +62,15 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\TriangleMesh.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\PathTracingWithPhotonMappingRP.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\NanoFlannPhotonMap.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\Raycaster.hpp">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

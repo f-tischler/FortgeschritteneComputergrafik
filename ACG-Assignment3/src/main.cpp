@@ -1,3 +1,5 @@
+#include "NanoFlannPhotonMap.h"
+#include "PathTracingWithPhotonMappingRP.hpp"
 #ifndef main_H
 #define main_H
 
@@ -8,7 +10,7 @@
 #include "Camera.hpp"
 #include "Scene.hpp"
 #include "Sphere.hpp"
-#include "Raytracer.hpp"
+#include "Raycaster.hpp"
 #include "NanoFlannKdPMRP.hpp"
 #include "SimpleRadianceProvider.hpp"
 #include "SimplePhotonMappingRadianceProvider.h"
@@ -18,17 +20,17 @@ int main(int argc, char* argv[])
 {
 	glutInit(&argc, argv);
 
-	constexpr auto width = 600ul;
-	constexpr auto height = 400ul;
+	constexpr auto width = 1024ul;
+	constexpr auto height = 768ul;
 
 	constexpr auto roomWidth  = 400.f;
 	constexpr auto roomHeight = 300.f;
 
 	const auto camPos = Vector(0, 130.0, 500);
-	const auto lookAt = Vector(0, 40, 0);
+	const auto lookAt = Vector(0, 140, 0);
 	constexpr auto fov = 80.0f / 180.0f * PI;
 
-	constexpr auto lightPower = 5000000.f;
+	constexpr auto lightPower = 1000000.f;
 
 	Scene scene;
 	Image image(width, height);
@@ -45,21 +47,17 @@ int main(int argc, char* argv[])
 	auto greyGlossyMat = Material(eReflectionType::SPEC, Color(0.6, 0.6, 0.6), Color(0, 0, 0), 0.8f);
 	auto whiteTransMat = Material(eReflectionType::TRAN, Color(1, 1, 1)*.999f, Color(0), 0.0f);
 
-	auto lightMat = Material(eReflectionType::DIFF, Color(255.f /255.f, 147.f / 255.f, 41.f / 255.f), Color(255.f / 255.f, 147.f / 255.f, 41.f / 255.f)*lightPower, 0.0f);
-
-
-
-
-
+	auto lightColor = Color(255.f / 255.f / 2, 147.f / 255.f / 2, 41.f / 255.f / 2);
+	auto lightMat = Material(eReflectionType::DIFF, lightColor, lightColor*lightPower, 0.0f);
 
 	//Back left
 	scene.AddGeometry(std::make_unique<Sphere>(greyGlossyMat, Vector(-70, 45, 70), 40.0f));
 
 	//back right
-	scene.AddGeometry(std::make_unique<Sphere>(redDiffuseMat, Vector(50, 90, 70), 40.0f));
+	scene.AddGeometry(std::make_unique<Sphere>(whiteDiffuseMat, Vector(95, 90, 70), 40.0f));
 
 	//front left
-	scene.AddGeometry(std::make_unique<Sphere>(greySpecularMat, Vector(-70, 0, 250), 60.0f));
+	scene.AddGeometry(std::make_unique<Sphere>(greySpecularMat, Vector(-100, 0, 280), 50.0f));
 
 	//front right
 	//scene.AddGeometry(std::make_unique<Sphere>(whiteTransMat, Vector(75, 60, 250), 40.0f));
@@ -68,7 +66,7 @@ int main(int argc, char* argv[])
 		auto cube = loadObj("diamond.obj", whiteTransMat);
 		cube->scale(Vector(30.0f, 30.0f, 30.0f));
 		//cube->rotate(Vector(20.f, 0.f, 20.f));
-		cube->translate(Vector(75, 60, 250));
+		cube->translate(Vector(0, 140, 160));
 
 		scene.AddGeometry(std::move(cube));
 	}
@@ -82,8 +80,13 @@ int main(int argc, char* argv[])
 		scene.AddGeometry(std::move(cube));
 	}
 
+	auto lightHousing = loadObj("light_housing.obj", redDiffuseMat);
+	lightHousing->scale(Vector(300, 300, 300));
+	lightHousing->translate(Vector(0, 210, 160));
+	scene.AddGeometry(std::move(lightHousing));
+
 	//light
-	scene.AddGeometry(std::make_unique<Sphere>(lightMat, Vector(0, 190, 160), 8.0f));
+	scene.AddGeometry(std::make_unique<Sphere>(lightMat, Vector(0, 210, 160), 8.0f));
 
 	auto r = 50000.0f;
 
@@ -94,24 +97,20 @@ int main(int argc, char* argv[])
 	scene.AddGeometry(std::make_unique<Sphere>(greyDiffuseMat, Vector(0, 0, -r - roomWidth / 2), r));
 
 	{
-		auto radianceProvider = NanoFlannKdPMRP(true);
+		auto radianceProvider = PathTracingWithPhotonMappingRP<NanoFlannPhotonMap>(scene, false, true);
 		radianceProvider.CreatePhotonMap(scene);
 
-		auto config = RaytracerConfiguration
+		auto config = RaycasterConfiguration
 		{
 			2, // subSamplesPerPixel
-			4, // unsigned int samplesPerSubSample;
+			32, // unsigned int samplesPerSubSample;
 			1, // unsigned int dofSamples;
-			1, // float apetureSize;
+			2, // float apetureSize;
 		};
 
-		auto raytracer = Raytracer<decltype(radianceProvider)>(image,
-			camera,
-			scene,
-			radianceProvider,
-			config);
+		auto raycaster = Raycaster<decltype(radianceProvider)>(image, camera, radianceProvider, config);
 
-		raytracer.Render();
+		raycaster.Render();
 	}
 
     auto filename = "image.ppm";
