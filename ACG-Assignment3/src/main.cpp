@@ -20,15 +20,15 @@ int main(int argc, char* argv[])
 {
 	glutInit(&argc, argv);
 
-	constexpr auto width = 600ul;
-	constexpr auto height = 400ul;
+	constexpr auto width = 640ul;
+	constexpr auto height = 480ul;
 
 	constexpr auto roomWidth  = 400.f;
 	constexpr auto roomHeight = 300.f;
 
 	const auto camPos = Vector(0, 130.0, 500);
-	const auto lookAt = Vector(0, 40, 0);
-	constexpr auto fov = 80.0f / 180.0f * PI;
+	const auto lookAt = Vector(0, 145, 190);
+	constexpr auto fov = 80.0f / 160.0f * PI;
 
 	constexpr auto lightPower = 1000000.f;
 
@@ -57,7 +57,10 @@ int main(int argc, char* argv[])
 	scene.AddGeometry(std::make_unique<Sphere>(whiteDiffuseMat, Vector(95, 90, 70), 40.0f));
 
 	//front left
-	scene.AddGeometry(std::make_unique<Sphere>(greySpecularMat, Vector(-70, 0, 250), 60.0f));
+	scene.AddGeometry(std::make_unique<Sphere>(greySpecularMat, Vector(-100, 0, 280), 50.0f));
+
+	// camera focus point
+	scene.AddGeometry(std::make_unique<Sphere>(whiteDiffuseMat, lookAt, 5.0f));
 
 	//front right
 	//scene.AddGeometry(std::make_unique<Sphere>(whiteTransMat, Vector(75, 60, 250), 40.0f));
@@ -103,9 +106,9 @@ int main(int argc, char* argv[])
 		auto config = RaycasterConfiguration
 		{
 			2, // subSamplesPerPixel
-			24, // unsigned int samplesPerSubSample;
+			2, // unsigned int samplesPerSubSample;
 			1, // unsigned int dofSamples;
-			1, // float apetureSize;
+			4, // float apetureSize;
 		};
 
 		auto raycaster = Raycaster<decltype(radianceProvider)>(image, camera, radianceProvider, config);

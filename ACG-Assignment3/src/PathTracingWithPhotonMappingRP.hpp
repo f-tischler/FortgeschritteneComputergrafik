@@ -91,7 +91,7 @@ public:
 
 private:
 	static constexpr auto minDepth = 5;
-	static constexpr auto photonCount = 40000000;
+	static constexpr auto photonCount = 1000000;
 	static constexpr auto debugEpsilon = 0.05f;
 
 	float GetRandom() const { static std::default_random_engine rnd; return _rng(rnd); }
