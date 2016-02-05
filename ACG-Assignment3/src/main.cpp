@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
 
 	const auto camPos = Vector(0, 130.0, 500);
 	const auto lookAt = Vector(0, 145, 190);
-	constexpr auto fov = 80.0f / 160.0f * PI;
+	constexpr auto fov = 80.0f / 180.0f * PI;
 
 	constexpr auto lightPower = 1000000.f;
 
