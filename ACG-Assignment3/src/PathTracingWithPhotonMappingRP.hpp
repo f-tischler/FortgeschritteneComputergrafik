@@ -3,12 +3,12 @@
 
 #include <map>
 #include <random>
-#include "glm/gtx/norm.hpp"
+#include <list>
 
+#include "glm/gtx/norm.hpp"
 #include "Scene.hpp"
 #include "Sphere.hpp"
 #include "nanoflann.hpp"
-#include <list>
 #include "Raycaster.hpp"
 
 template<class PhotonMapType>
@@ -24,7 +24,7 @@ public:
 		const auto& objects = scene.GetGeometry();
 
 		for (auto& object : objects)
-			_photonMap.try_emplace(reinterpret_cast<size_t>(object.get()));
+			_photonMap.emplace(std::piecewise_construct, std::forward_as_tuple(reinterpret_cast<size_t>(object.get())), std::forward_as_tuple());
 
 		std::list<std::future<void>> tasks;
 		auto threads = std::thread::hardware_concurrency();

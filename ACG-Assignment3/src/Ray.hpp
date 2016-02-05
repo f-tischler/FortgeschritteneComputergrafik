@@ -1,8 +1,6 @@
 #ifndef Ray_H_included
 #define Ray_H_included
 
-#include "glm/common.hpp"
-
 /*------------------------------------------------------------------
 | Structure for rays (e.g. viewing ray, ray tracing)
 ------------------------------------------------------------------*/

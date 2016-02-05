@@ -2,7 +2,6 @@
 #define Camera_H
 
 #include "Ray.hpp"
-#include "glm/common.hpp"
 #include "glm/glm.hpp"
 
 class Camera

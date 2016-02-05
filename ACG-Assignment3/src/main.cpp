@@ -1,5 +1,4 @@
-#include "NanoFlannPhotonMap.h"
-#include "PathTracingWithPhotonMappingRP.hpp"
+
 #ifndef main_H
 #define main_H
 
@@ -14,6 +13,8 @@
 #include "NanoFlannKdPMRP.hpp"
 #include "SimpleRadianceProvider.hpp"
 #include "SimplePhotonMappingRadianceProvider.h"
+#include "NanoFlannPhotonMap.h"
+#include "PathTracingWithPhotonMappingRP.hpp"
 #include "ModelLoader.hpp"
 
 int main(int argc, char* argv[])
@@ -60,28 +61,17 @@ int main(int argc, char* argv[])
 	scene.AddGeometry(std::make_unique<Sphere>(greySpecularMat, Vector(-100, 0, 280), 50.0f));
 
 	// camera focus point
-	scene.AddGeometry(std::make_unique<Sphere>(whiteDiffuseMat, lookAt, 5.0f));
+	//scene.AddGeometry(std::make_unique<Sphere>(whiteDiffuseMat, lookAt, 5.0f));
 
 	//front right
 	//scene.AddGeometry(std::make_unique<Sphere>(whiteTransMat, Vector(75, 60, 250), 40.0f));
-	if(true)
-	{
-		auto cube = loadObj("diamond.obj", whiteTransMat);
-		cube->scale(Vector(30.0f, 30.0f, 30.0f));
-		//cube->rotate(Vector(20.f, 0.f, 20.f));
-		cube->translate(Vector(0, 140, 160));
 
-		scene.AddGeometry(std::move(cube));
-	}
-	else
-	{
-		auto cube = loadObj("Wine glass_low.obj", whiteTransMat);
-		cube->scale(Vector(30.0f, 30.0f, 30.0f));
-		//cube->rotate(Vector(20.f, 0.f, 20.f));
-		cube->translate(Vector(75, 60, 250));
+	auto diamond = loadObj("diamond.obj", whiteTransMat);
+	diamond->scale(Vector(30.0f, 30.0f, 30.0f));
+	//diamond->rotate(Vector(20.f, 0.f, 20.f));
+	diamond->translate(Vector(0, 140, 160));
 
-		scene.AddGeometry(std::move(cube));
-	}
+	scene.AddGeometry(std::move(diamond));
 
 	auto lightHousing = loadObj("light_housing.obj", redDiffuseMat);
 	lightHousing->scale(Vector(300, 300, 300));
@@ -99,16 +89,17 @@ int main(int argc, char* argv[])
 	scene.AddGeometry(std::make_unique<Sphere>(blueDiffuseMat, Vector(r + roomWidth / 2, 0, 0), r));
 	scene.AddGeometry(std::make_unique<Sphere>(greyDiffuseMat, Vector(0, 0, -r - roomWidth / 2), r));
 
+	// add extra scope to for the radiance provider so that its memory is freed after rendering
 	{
 		auto radianceProvider = PathTracingWithPhotonMappingRP<NanoFlannPhotonMap>(scene, false, true);
 		radianceProvider.CreatePhotonMap(scene);
 
 		auto config = RaycasterConfiguration
 		{
-			2, // subSamplesPerPixel
-			2, // unsigned int samplesPerSubSample;
-			1, // unsigned int dofSamples;
-			4, // float apetureSize;
+			2, // sub samples per pixel
+			2, // samples per sub sample;
+			1, // dof samples;
+			4, // apeture size;
 		};
 
 		auto raycaster = Raycaster<decltype(radianceProvider)>(image, camera, radianceProvider, config);

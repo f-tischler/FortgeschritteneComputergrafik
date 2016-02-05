@@ -23,7 +23,7 @@ public:
 		const auto& objects = scene.GetGeometry();
 
 		for (auto& object : objects)
-			_photonMap.try_emplace(reinterpret_cast<size_t>(object.get()));
+			_photonMap.emplace(std::piecewise_construct, std::forward_as_tuple(reinterpret_cast<size_t>(object.get())), std::forward_as_tuple());
 
 		std::list<std::future<void>> tasks;
 		auto threads = std::thread::hardware_concurrency();

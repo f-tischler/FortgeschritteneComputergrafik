@@ -84,15 +84,13 @@ public:
 
 	auto GetNeighbours(const Vector& pos, const size_t n) const
 	{
-		const float query_pt[3] = { pos.x, pos.y, pos.z };
-		const auto num_results = n;
+		const float queryPos[3] = { pos.x, pos.y, pos.z };
 
 		NeighbourSet set(n);
-
-		nanoflann::KNNResultSet<float> resultSet(num_results);
+		nanoflann::KNNResultSet<float> resultSet(n);
 
 		resultSet.init(set.GetIndices().data(), set.GetDistances().data());
-		_index.findNeighbors(resultSet, &query_pt[0], nanoflann::SearchParams(10));
+		_index.findNeighbors(resultSet, &queryPos[0], nanoflann::SearchParams(10));
 
 		set.SetWorstDistanceSq(resultSet.worstDist());
 

@@ -122,7 +122,7 @@ public:
 		//const auto numYperThread = static_cast<Image::SizeType>(_image.GetHeight() / numThreads + (_image.GetHeight() % numThreads == 0 ? 0 : 1));
 
 		LiveImage liveImage(_image.GetWidth(), _image.GetHeight());
-		liveImage.show();
+		liveImage.Show();
 
 		std::atomic<Image::SizeType> fragmentsDone = 0;
 		std::vector<std::future<void>> tasks;
@@ -176,7 +176,7 @@ public:
 
 						_image.AddColor(x, y, accumulated_radiance);
 
-						liveImage.set(x, y, accumulated_radiance);
+						liveImage.Set(x, y, accumulated_radiance);
 					}
 					
 					fragmentsDone += endX - startX;
@@ -202,7 +202,7 @@ public:
 				}
 			}
 
-			liveImage.update();
+			liveImage.Update();
 		}
 
 		std::cout << std::endl;
