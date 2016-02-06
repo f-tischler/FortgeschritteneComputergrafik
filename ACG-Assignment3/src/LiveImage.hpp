@@ -3,8 +3,13 @@
 
 #include "Common.hpp"
 
+#ifndef __APPLE__
 #include "opengl/include/GL/freeglut.h"
 #include <GL/gl.h>
+#else
+#include <OpenGL/gl.h>
+#include <GLUT/glut.h>
+#endif
 
 class LiveImage;
 
@@ -28,7 +33,11 @@ public:
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glDrawPixels(static_cast<int>(_width), static_cast<int>(_height), GL_RGB, GL_FLOAT, _pixels.data());
 		glutSwapBuffers();
+#ifndef __APPLE__
 		glutMainLoopEvent();
+#else
+        glutMainLoop();
+#endif
 	}
 
 	void Set(size_t x, size_t y, const Color& c)
