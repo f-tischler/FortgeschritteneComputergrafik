@@ -5,6 +5,7 @@
 #include "Camera.hpp"
 #include "Scene.hpp"
 #include "Material.hpp"
+
 #include <iostream>
 #include <random>
 #include <future>
@@ -124,7 +125,7 @@ public:
 		LiveImage liveImage(_image.GetWidth(), _image.GetHeight());
 		liveImage.Show();
 
-		std::atomic<Image::SizeType> fragmentsDone = 0;
+		std::atomic<Image::SizeType> fragmentsDone(0);
 		std::vector<std::future<void>> tasks;
 
 		for (auto tidx = 0ul; tidx < numThreads; tidx++)
@@ -216,9 +217,13 @@ private:
 	Camera& _camera;
 	RaycasterConfiguration _config;
 	RadianceProviderType& _radianceProvider;
-	std::uniform_real_distribution<float> _rng;
 
-	auto GetRandom() const { static std::default_random_engine _rnd; return _rng(_rnd); }
+	auto GetRandom() const
+	{
+		static std::default_random_engine _rnd;
+		static std::uniform_real_distribution<float> _rng;
+		return _rng(_rnd);
+	}
 
 	Color Sample(Image::SizeType x, Image::SizeType y, int, int, const Vector& viewPlaneBottomLeft, const Vector& xIncVector, const Vector& yIncVector, const Vector& apeture) const
 	{

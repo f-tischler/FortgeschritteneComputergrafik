@@ -95,7 +95,12 @@ private:
 	static constexpr auto photonCount = 60000000;
 	static constexpr auto debugEpsilon = 0.05f;
 
-	float GetRandom() const { static std::default_random_engine rnd; return _rng(rnd); }
+	float GetRandom() const
+	{
+		static std::default_random_engine rnd;
+		static std::uniform_real_distribution<float> _rng(-1.0f, 1.0f);
+		return _rng(rnd);
+	}
 
 	void SendPhoton(const Scene& scene, typename PhotonMapType::PhotonType photon, int depth = 1)
 	{
@@ -139,9 +144,9 @@ private:
 					nl = nl*-1.0f;
 
 				/* Compute random reflection vector on hemisphere */
-				auto r1 = 2.0f * PI * drand48();
-				auto r2 = drand48();
-				auto r2s = sqrt(r2);
+				auto r1 = static_cast<float>(2.0f * PI * drand48());
+				auto r2 = static_cast<float>(drand48());
+				auto r2s = std::sqrt(r2);
 
 				/* Set up local orthogonal coordinate system u,v,w on surface */
 				auto w = nl;
@@ -155,9 +160,9 @@ private:
 				auto v = glm::cross(w, u);
 
 				/* Random reflection vector d */
-				auto d = u * cos(r1) * r2s +
-					v * sin(r1) * r2s +
-					w * sqrt(1.f - r2);
+				auto d = u * std::cos(r1) * r2s +
+					v * std::sin(r1) * r2s +
+					w * std::sqrt(1.f - r2);
 
 				photon.SetDirection(d);
 				photon.SetRadiance(photon.GetRadiance() * color * std::max(0.0f, -glm::dot(info.normal, -photon.GetDirection())) * 0.7f);
@@ -221,13 +226,13 @@ private:
 
 				/* Determine transmitted ray direction for refraction */
 				if (into)
-					tdir = (origDir * nnt - normal * (ddn * nnt + sqrt(cos2t)));
+					tdir = (origDir * nnt - normal * (ddn * nnt + std::sqrt(cos2t)));
 				else
-					tdir = (origDir * nnt + normal * (ddn * nnt + sqrt(cos2t)));
+					tdir = (origDir * nnt + normal * (ddn * nnt + std::sqrt(cos2t)));
 
 				tdir = glm::normalize(tdir);
 
-				/* Determine R0 for Schlick´s approximation */
+				/* Determine R0 for Schlickï¿½s approximation */
 				float a = nt - nc;
 				float b = nt + nc;
 				float R0 = a*a / (b*b);
@@ -239,7 +244,7 @@ private:
 				else
 					c = 1 - glm::dot(tdir, normal);
 
-				/* Compute Schlick´s approximation of Fresnel equation */
+				/* Compute Schlickï¿½s approximation of Fresnel equation */
 				float Re = R0 + (1.f - R0) *c*c*c*c*c;   /* Reflectance */
 				float Tr = 1.f - Re;                     /* Transmittance */
 
@@ -452,13 +457,13 @@ private:
 
 			/* Determine transmitted ray direction for refraction */
 			if (into)
-				tdir = (origDir * nnt - normal * (ddn * nnt + sqrt(cos2t)));
+				tdir = (origDir * nnt - normal * (ddn * nnt + std::sqrt(cos2t)));
 			else
-				tdir = (origDir * nnt + normal * (ddn * nnt + sqrt(cos2t)));
+				tdir = (origDir * nnt + normal * (ddn * nnt + std::sqrt(cos2t)));
 
 			tdir = glm::normalize(tdir);
 
-			/* Determine R0 for Schlick´s approximation */
+			/* Determine R0 for Schlickï¿½s approximation */
 			auto a = nt - nc;
 			auto b = nt + nc;
 			auto R0 = a*a / (b*b);
@@ -470,7 +475,7 @@ private:
 			else
 				c = 1 - glm::dot(tdir, normal);
 
-			/* Compute Schlick´s approximation of Fresnel equation */
+			/* Compute Schlickï¿½s approximation of Fresnel equation */
 			auto Re = R0 + (1.f - R0) *c*c*c*c*c;   /* Reflectance */
 			auto Tr = 1.f - Re;                     /* Transmittance */
 
@@ -542,8 +547,6 @@ private:
 	}
 
 	std::map<size_t, PhotonMapType> _photonMap;
-
-	std::uniform_real_distribution<float> _rng = std::uniform_real_distribution<float>(-1.0f, 1.0f);
 	bool _debug;
 	const Scene& _scene;
 	float _softShadows;

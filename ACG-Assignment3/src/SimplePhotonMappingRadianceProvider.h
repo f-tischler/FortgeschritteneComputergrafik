@@ -255,13 +255,13 @@ private:
 
 					/* Determine transmitted ray direction for refraction */
 					if (into)
-						tdir = (origDir * nnt - normal * (ddn * nnt + sqrt(cos2t)));
+						tdir = (origDir * nnt - normal * (ddn * nnt + std::sqrt(cos2t)));
 					else
-						tdir = (origDir * nnt + normal * (ddn * nnt + sqrt(cos2t)));
+						tdir = (origDir * nnt + normal * (ddn * nnt + std::sqrt(cos2t)));
 
 					tdir = glm::normalize(tdir);
 
-					/* Determine R0 for Schlick´s approximation */
+					/* Determine R0 for Schlickï¿½s approximation */
 					float a = nt - nc;
 					float b = nt + nc;
 					float R0 = a*a / (b*b);
@@ -273,7 +273,7 @@ private:
 					else
 						c = 1 - glm::dot(tdir, normal);
 
-					/* Compute Schlick´s approximation of Fresnel equation */
+					/* Compute Schlickï¿½s approximation of Fresnel equation */
 					float Re = R0 + (1.f - R0) *c*c*c*c*c;   /* Reflectance */
 					float Tr = 1.f - Re;                     /* Transmittance */
 
