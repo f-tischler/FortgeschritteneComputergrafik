@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		70352FD81C6756B5008BC99A /* libglut.3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 70352FD71C6756B5008BC99A /* libglut.3.dylib */; };
 		70C8393E1C66534A00EDF0AF /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 70C838FB1C66534A00EDF0AF /* main.cpp */; };
 		70C8393F1C66534A00EDF0AF /* freeglut.lib in Frameworks */ = {isa = PBXBuildFile; fileRef = 70C839281C66534A00EDF0AF /* freeglut.lib */; };
 		70C839401C66534A00EDF0AF /* glew32.lib in Frameworks */ = {isa = PBXBuildFile; fileRef = 70C839291C66534A00EDF0AF /* glew32.lib */; };
@@ -47,6 +48,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		70352FD71C6756B5008BC99A /* libglut.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglut.3.dylib; path = ../../../../../../../../../../../usr/local/Cellar/freeglut/2.8.1/lib/libglut.3.dylib; sourceTree = "<group>"; };
 		709E77C81C54FB790022CCD5 /* ACG-Assignment3 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "ACG-Assignment3"; sourceTree = BUILT_PRODUCTS_DIR; };
 		70C837F11C66534A00EDF0AF /* BoundingBox.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = BoundingBox.hpp; path = ../../../src/BoundingBox.hpp; sourceTree = "<group>"; };
 		70C837F21C66534A00EDF0AF /* Camera.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Camera.hpp; path = ../../../src/Camera.hpp; sourceTree = "<group>"; };
@@ -373,6 +375,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				70352FD81C6756B5008BC99A /* libglut.3.dylib in Frameworks */,
 				70C839491C66539000EDF0AF /* OpenGL.framework in Frameworks */,
 				70C8394B1C6653BA00EDF0AF /* GLUT.framework in Frameworks */,
 				70C8393F1C66534A00EDF0AF /* freeglut.lib in Frameworks */,
@@ -393,6 +396,7 @@
 		709E77BF1C54FB790022CCD5 = {
 			isa = PBXGroup;
 			children = (
+				70352FD71C6756B5008BC99A /* libglut.3.dylib */,
 				70C8394A1C6653BA00EDF0AF /* GLUT.framework */,
 				70C839481C66539000EDF0AF /* OpenGL.framework */,
 				709E77CA1C54FB790022CCD5 /* ACG-Assignment3 */,
@@ -1008,6 +1012,11 @@
 		709E77D01C54FB790022CCD5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = /usr/local/Cellar/freeglut/2.8.1/include;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/usr/local/Cellar/freeglut/2.8.1/lib,
+				);
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-std=c++1y",
@@ -1020,6 +1029,11 @@
 		709E77D11C54FB790022CCD5 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = /usr/local/Cellar/freeglut/2.8.1/include;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/usr/local/Cellar/freeglut/2.8.1/lib,
+				);
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-std=c++1y",
