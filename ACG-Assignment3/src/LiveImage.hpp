@@ -8,7 +8,7 @@
 #include <GL/gl.h>
 #else
 #include <OpenGL/gl.h>
-#include <GL/freeglut.h>
+#include "opengl/include/GL/freeglut.h"
 #endif
 
 class LiveImage;

@@ -90,9 +90,9 @@ public:
 	}
 
 private:
-	static constexpr auto gatherCount = 500;
+	static constexpr auto gatherCount = 200;
 	static constexpr auto minDepth = 4;
-	static constexpr auto photonCount = 60000000;
+	static constexpr auto photonCount = 1000000;
 	static constexpr auto debugEpsilon = 0.05f;
 
 	float GetRandom() const

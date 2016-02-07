@@ -19,7 +19,6 @@
 		70C839461C66534A00EDF0AF /* glew32.lib in Frameworks */ = {isa = PBXBuildFile; fileRef = 70C839311C66534A00EDF0AF /* glew32.lib */; };
 		70C839471C66534A00EDF0AF /* glfw3dll.lib in Frameworks */ = {isa = PBXBuildFile; fileRef = 70C839321C66534A00EDF0AF /* glfw3dll.lib */; };
 		70C839491C66539000EDF0AF /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 70C839481C66539000EDF0AF /* OpenGL.framework */; };
-		70C8394B1C6653BA00EDF0AF /* GLUT.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 70C8394A1C6653BA00EDF0AF /* GLUT.framework */; };
 		70C839511C6656A700EDF0AF /* diamond.obj in CopyFiles */ = {isa = PBXBuildFile; fileRef = 70C839001C66534A00EDF0AF /* diamond.obj */; };
 		70C839521C6656A700EDF0AF /* light_housing.obj in CopyFiles */ = {isa = PBXBuildFile; fileRef = 70C839501C66569100EDF0AF /* light_housing.obj */; };
 /* End PBXBuildFile section */
@@ -375,9 +374,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				70352FD81C6756B5008BC99A /* libglut.3.dylib in Frameworks */,
 				70C839491C66539000EDF0AF /* OpenGL.framework in Frameworks */,
-				70C8394B1C6653BA00EDF0AF /* GLUT.framework in Frameworks */,
+				70352FD81C6756B5008BC99A /* libglut.3.dylib in Frameworks */,
 				70C8393F1C66534A00EDF0AF /* freeglut.lib in Frameworks */,
 				70C839401C66534A00EDF0AF /* glew32.lib in Frameworks */,
 				70C839441C66534A00EDF0AF /* glfw3dll.lib in Frameworks */,
@@ -1012,6 +1010,7 @@
 		709E77D01C54FB790022CCD5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				HEADER_SEARCH_PATHS = /usr/local/Cellar/freeglut/2.8.1/include;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1029,6 +1028,7 @@
 		709E77D11C54FB790022CCD5 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				HEADER_SEARCH_PATHS = /usr/local/Cellar/freeglut/2.8.1/include;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
