@@ -23,3 +23,10 @@ ACG-Assignment3/vs/ACG3/packages/
 ACG-Assignment3/vs/ACG3/ACG3/x64/
 ACG-Assignment3/vs/ACG3/.nuget/packages.config
 ACG-Assignment3/bin/
+ACG-Assignment1/vs/Radiosity/Radiosity/Release/
+ACG-Assignment1/vs/Radiosity/Radiosity/x64/
+ACG-Assignment2/bin/vs/Debug/
+ACG-Assignment2/vs/PathTracer/PathTracer/Debug/
+ACG-Assignment2/vs/PathTracer/PathTracer/Release/
+ACG-Assignment3/src/build/
+ACG-Assignment2/bin/vs/Release/
